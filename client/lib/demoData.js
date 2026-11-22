@@ -1,0 +1,73 @@
+// Demo data mirroring the seed script — used when backend is unavailable.
+
+export const demoUser = {
+  id: 'demo-admin',
+  name: 'Platform Admin',
+  email: 'admin@freightguard.ai',
+  role: 'admin',
+  company: { _id: 'demo-co', name: 'Harborline Imports', feePct: 25, plan: 'free' },
+};
+
+export const invoices = [
+  { _id: 'inv1', invoiceNumber: 'TRM-2026-04412', carrierName: 'TransMarine Lines', port: 'Port of Los Angeles', containerNumber: 'TCLU-4829137', totalBilled: 1840, auditStatus: 'audited', createdAt: '2026-09-10T10:00:00Z', company: { name: 'Harborline Imports' } },
+  { _id: 'inv2', invoiceNumber: 'MSK-2026-11890', carrierName: 'Maersk', port: 'Port of Los Angeles', containerNumber: 'MRDU-7721904', totalBilled: 940, auditStatus: 'audited', createdAt: '2026-09-14T11:30:00Z', company: { name: 'Harborline Imports' } },
+  { _id: 'inv3', invoiceNumber: 'HPL-2026-09331', carrierName: 'Hapag-Lloyd', port: 'Port of New York', containerNumber: 'HLGU-3391200', totalBilled: 550, auditStatus: 'audited', createdAt: '2026-10-02T09:15:00Z', company: { name: 'Harborline Imports' } },
+  { _id: 'inv4', invoiceNumber: 'TRM-2026-04560', carrierName: 'TransMarine Lines', port: 'Port of Los Angeles', containerNumber: 'TCLU-4900112', totalBilled: 310, auditStatus: 'pending', createdAt: '2026-10-18T14:20:00Z', company: { name: 'Harborline Imports' } },
+  { _id: 'inv5', invoiceNumber: 'MSC-2026-22001', carrierName: 'MSC', port: 'Port of New York', containerNumber: 'MSCU-1122334', totalBilled: 1275, auditStatus: 'pending', createdAt: '2026-11-01T08:45:00Z', company: { name: 'Harborline Imports' } },
+];
+
+export const invoiceLines = [
+  { _id: 'l1', invoice: 'inv1', feeType: 'demurrage', description: 'Demurrage days 1-10', days: 10, rate: 120, billedAmount: 1200, verdict: 'overcharged', correctAmount: 720, reason: 'Billed 10 days at $120, but only 6 chargeable days after 4 free days at $120.', confidence: 0.92, reviewStatus: 'confirmed', invoiceRef: { invoiceNumber: 'TRM-2026-04412', carrierName: 'TransMarine Lines', port: 'Port of Los Angeles' } },
+  { _id: 'l2', invoice: 'inv1', feeType: 'detention', description: 'Detention days 1-7', days: 7, rate: 90, billedAmount: 630, verdict: 'invalid', correctAmount: 0, reason: 'Days billed exceed free time; rate mismatch.', confidence: 0.68, reviewStatus: 'unreviewed', invoiceRef: { invoiceNumber: 'TRM-2026-04412', carrierName: 'TransMarine Lines', port: 'Port of Los Angeles' } },
+  { _id: 'l3', invoice: 'inv1', feeType: 'demurrage', description: 'Duplicate demurrage', days: 10, rate: 40, billedAmount: 10, verdict: 'invalid', correctAmount: 0, reason: 'Duplicate charge: same fee type and dates appear twice.', confidence: 0.85, reviewStatus: 'unreviewed', invoiceRef: { invoiceNumber: 'TRM-2026-04412', carrierName: 'TransMarine Lines', port: 'Port of Los Angeles' } },
+  { _id: 'l4', invoice: 'inv2', feeType: 'demurrage', description: 'Demurrage 8 days', days: 8, rate: 90, billedAmount: 720, verdict: 'ok', correctAmount: 720, reason: 'Charge matches contract terms.', confidence: 0.95, reviewStatus: 'confirmed', invoiceRef: { invoiceNumber: 'MSK-2026-11890', carrierName: 'Maersk', port: 'Port of Los Angeles' } },
+  { _id: 'l5', invoice: 'inv2', feeType: 'detention', description: 'Detention 2 days', days: 2, rate: 110, billedAmount: 220, verdict: 'overcharged', correctAmount: 0, reason: 'Within free time allowance of 5 days.', confidence: 0.91, reviewStatus: 'unreviewed', invoiceRef: { invoiceNumber: 'MSK-2026-11890', carrierName: 'Maersk', port: 'Port of Los Angeles' } },
+  { _id: 'l6', invoice: 'inv3', feeType: 'demurrage', description: 'Demurrage 5 days', days: 5, rate: 110, billedAmount: 550, verdict: 'ok', correctAmount: 550, reason: 'Charge matches contract terms.', confidence: 0.94, reviewStatus: 'confirmed', invoiceRef: { invoiceNumber: 'HPL-2026-09331', carrierName: 'Hapag-Lloyd', port: 'Port of New York' } },
+];
+
+export const disputes = [
+  { _id: 'd1', invoiceNumber: 'TRM-2026-04412', carrierName: 'TransMarine Lines', status: 'won', disputedAmount: 930, createdAt: '2026-09-25T10:00:00Z', company: { name: 'Harborline Imports' } },
+  { _id: 'd2', invoiceNumber: 'MSK-2026-11890', carrierName: 'Maersk', status: 'sent', disputedAmount: 220, createdAt: '2026-10-01T10:00:00Z', company: { name: 'Harborline Imports' } },
+  { _id: 'd3', invoiceNumber: 'HPL-2026-09331', carrierName: 'Hapag-Lloyd', status: 'under_review', disputedAmount: 0, createdAt: '2026-10-10T10:00:00Z', company: { name: 'Harborline Imports' } },
+  { _id: 'd4', invoiceNumber: 'TRM-2026-04560', carrierName: 'TransMarine Lines', status: 'draft', disputedAmount: 0, createdAt: '2026-10-18T10:00:00Z', company: { name: 'Harborline Imports' } },
+  { _id: 'd5', invoiceNumber: 'MSC-2026-22001', carrierName: 'MSC', status: 'lost', disputedAmount: 275, createdAt: '2026-08-01T10:00:00Z', company: { name: 'Harborline Imports' } },
+  { _id: 'd6', invoiceNumber: 'TRM-2026-04412', carrierName: 'TransMarine Lines', status: 'draft', disputedAmount: 100, createdAt: '2026-10-20T10:00:00Z', company: { name: 'Harborline Imports' } },
+];
+
+export const contracts = [
+  { _id: 'c1', carrierName: 'TransMarine Lines', port: 'Port of Los Angeles', containerType: '40gp', freeDays: 4, currency: 'USD', dayRule: 'calendar', tiers: [{ dayFrom: 1, dayTo: 5, rate: 75 }, { dayFrom: 6, dayTo: 10, rate: 120 }, { dayFrom: 11, dayTo: 999, rate: 180 }] },
+  { _id: 'c2', carrierName: 'Maersk', port: 'Port of Los Angeles', containerType: '40hc', freeDays: 5, currency: 'USD', dayRule: 'working', tiers: [{ dayFrom: 1, dayTo: 7, rate: 90 }, { dayFrom: 8, dayTo: 999, rate: 150 }] },
+  { _id: 'c3', carrierName: 'Hapag-Lloyd', port: 'Port of New York', containerType: 'reefer', freeDays: 3, currency: 'USD', dayRule: 'calendar', tiers: [{ dayFrom: 1, dayTo: 10, rate: 110 }] },
+];
+
+export const users = [
+  { _id: 'u1', name: 'Platform Admin', email: 'admin@freightguard.ai', role: 'admin', isActive: true, company: { name: '—' } },
+  { _id: 'u2', name: 'Review Operator', email: 'operator@freightguard.ai', role: 'operator', isActive: true, company: { name: '—' } },
+  { _id: 'u3', name: 'Priya Nair', email: 'priya@harborline.com', role: 'user', isActive: true, company: { name: 'Harborline Imports' } },
+];
+
+export const recoveries = [
+  { _id: 'r1', amount: 2845, feeAmount: 711.25, feePct: 25, recoveredAt: '2026-10-20T10:00:00Z' },
+];
+
+export const adminStats = {
+  users: { total: 3, operators: 1, admins: 1 },
+  companies: 1,
+  invoices: { total: 5, audited: 3, pending: 2, totalBilled: 4915 },
+  flags: { total: 5, flaggedAmount: 1840 },
+  disputes: { total: 6, draft: 2, active: 2, won: 1, lost: 1 },
+  recoveries: { total: 1, recoveredAmount: 2845, fees: 711.25 },
+};
+
+export const dashboardData = {
+  kpis: {
+    auditedInvoices: 3, totalInvoices: 5, totalBilled: 4915, flaggedAmount: 1840,
+    recoveredAmount: 2845, recoveryRate: 58, feeDue: 711.25, activeDisputes: 4,
+  },
+  invoices: invoices.slice(0, 5),
+  disputes: disputes.slice(0, 5),
+  weekly: [
+    { week: 'W1', invoices: 1, recovered: 0 }, { week: 'W2', invoices: 2, recovered: 0 },
+    { week: 'W3', invoices: 1, recovered: 2845 }, { week: 'W4', invoices: 1, recovered: 0 },
+  ],
+};
