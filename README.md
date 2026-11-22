@@ -12,7 +12,7 @@ Repository: <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel>
 
 | Layer          | Technology                                                              |
 | -------------- | ----------------------------------------------------------------------- |
-| Frontend       | **Next.js 16.4.6** (App Router), React 18                               |
+| Frontend       | **Next.js 16.4.6** (App Router), **React 19.3.1**                       |
 | Backend        | Node.js + **Express.js** REST API                                       |
 | Database       | **MongoDB** via Mongoose                                                |
 | Auth           | JWT + bcrypt, role-based access control (`user` / `operator` / `admin`) |
@@ -20,7 +20,7 @@ Repository: <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel>
 | Error handling | Centralised error middleware + `asyncHandler`                           |
 | Quality        | ESLint 9 (flat config), Prettier, EditorConfig, CI                      |
 
-> Next.js 16 still supports React 18, but support is deprecated and will be removed in Next.js 17. React 19 is a follow-up upgrade, not part of the 45% scope.
+> React 19 replaced React 18 to remove Next.js 16's deprecation warning. The upgrade required no application-code changes; lint, formatting, and the production build all pass.
 
 ---
 

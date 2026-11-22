@@ -17,7 +17,7 @@ The product also includes an internal **admin panel** for operators to review lo
 
 | Layer           | Choice                                                    | Status in current build |
 | --------------- | --------------------------------------------------------- | ----------------------- |
-| Frontend        | **Next.js 16.4.6** (App Router, React 18)                 | ✅ Used                 |
+| Frontend        | **Next.js 16.4.6** (App Router, React 19.3.1)             | ✅ Used                 |
 | Backend         | **Node.js + Express.js** REST API                         | ✅ Used                 |
 | Database        | **MongoDB** via Mongoose                                  | ✅ Used                 |
 | Auth            | JWT + bcrypt, role-based access control                   | ✅ Used                 |

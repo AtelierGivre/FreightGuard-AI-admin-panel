@@ -304,7 +304,7 @@ Drafts are preserved under `deferred/`. Do not import from them until a unit is 
 
 ## 9. Change log
 
-- Upgraded Next.js from 14.2.35 to **16.4.6** (security); React 18 remains for now.
+- Upgraded Next.js from 14.2.35 to **16.4.6** (security) and React from 18.3.1 to **19.3.1**, removing the Next.js deprecation warning without application-code changes.
 - Added shared constants/formatters and removed duplicated money/rounding logic.
 - Rewrote API client with safe JSON parsing and explicit demo/fallback behaviour.
 - Fixed live dashboard KPI to return `totalBilled` (matching the table).
