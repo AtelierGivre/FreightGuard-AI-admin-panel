@@ -3,26 +3,22 @@ const { body } = require('express-validator');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
-const { validate } = require('../middleware/errorHandler');
+const { validate, asyncHandler } = require('../middleware/errorHandler');
 
-router.post(
-  '/register',
-  [
-    body('name').trim().notEmpty().withMessage('Name is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  ],
-  validate,
-  authController.register
-);
+const registerRules = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('companyName').optional({ checkFalsy: true }).trim().notEmpty(),
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+];
 
-router.post(
-  '/login',
-  [body('email').isEmail().withMessage('Valid email is required'), body('password').notEmpty().withMessage('Password is required')],
-  validate,
-  authController.login
-);
+const loginRules = [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('password').notEmpty().withMessage('Password is required'),
+];
 
-router.get('/me', protect, authController.getMe);
+router.post('/register', registerRules, validate, asyncHandler(authController.register));
+router.post('/login', loginRules, validate, asyncHandler(authController.login));
+router.get('/me', protect, asyncHandler(authController.getMe));
 
 module.exports = router;

@@ -1,0 +1,8 @@
+node_modules/
+client/.next/
+.next/
+dist/
+coverage/
+package-lock.json
+*.log
+deferred/

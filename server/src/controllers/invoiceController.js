@@ -11,7 +11,9 @@ const list = async (req, res) => {
 };
 
 const get = async (req, res) => {
-  const invoice = await Invoice.findOne({ _id: req.params.id, company: req.user.company }).populate('contract');
+  const invoice = await Invoice.findOne({ _id: req.params.id, company: req.user.company }).populate(
+    'contract',
+  );
   if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
   const lines = await InvoiceLine.find({ invoice: invoice._id });
   res.json({ success: true, data: { ...invoice.toObject(), lines } });
@@ -27,16 +29,17 @@ const update = async (req, res) => {
   const invoice = await Invoice.findOneAndUpdate(
     { _id: req.params.id, company: req.user.company },
     req.body,
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
   if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
   res.json({ success: true, data: invoice });
 };
 
 const remove = async (req, res) => {
-  await InvoiceLine.deleteMany({ invoice: req.params.id });
+  // Confirm the invoice belongs to the caller before touching its lines.
   const invoice = await Invoice.findOneAndDelete({ _id: req.params.id, company: req.user.company });
   if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
+  await InvoiceLine.deleteMany({ invoice: invoice._id });
   res.json({ success: true, message: 'Invoice deleted' });
 };
 
@@ -47,16 +50,22 @@ const runAudit = async (req, res) => {
   const invoice = await Invoice.findOne({ _id: req.params.id, company: req.user.company });
   if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
-  const contract = invoice.contract ? await Contract.findById(invoice.contract) : await Contract.findOne({
-    company: req.user.company,
-    carrierName: invoice.carrierName,
-    port: invoice.port,
-  });
+  const contract = invoice.contract
+    ? await Contract.findById(invoice.contract)
+    : await Contract.findOne({
+        company: req.user.company,
+        carrierName: invoice.carrierName,
+        port: invoice.port,
+      });
 
   const existingLines = await InvoiceLine.find({ invoice: invoice._id });
   const lines = existingLines.length
     ? existingLines
-    : (invoice.rawJson?.lines || []).map((l) => ({ ...l, invoice: invoice._id, billedAmount: l.billedAmount || l.amount || 0 }));
+    : (invoice.rawJson?.lines || []).map((l) => ({
+        ...l,
+        invoice: invoice._id,
+        billedAmount: l.billedAmount || l.amount || 0,
+      }));
 
   if (!lines.length) {
     return res.status(400).json({ success: false, message: 'Invoice has no line items to audit' });
@@ -78,9 +87,9 @@ const runAudit = async (req, res) => {
           billedAmount: line.billedAmount || 0,
           ...result,
         },
-        { new: true, upsert: true, runValidators: true }
+        { new: true, upsert: true, runValidators: true },
       );
-    })
+    }),
   );
 
   invoice.auditStatus = 'audited';

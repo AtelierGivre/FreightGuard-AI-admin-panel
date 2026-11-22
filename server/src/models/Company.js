@@ -9,7 +9,7 @@ const companySchema = new mongoose.Schema(
     feePct: { type: Number, default: 25, min: 0, max: 100 },
     timezone: { type: String, default: 'UTC' },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model('Company', companySchema);

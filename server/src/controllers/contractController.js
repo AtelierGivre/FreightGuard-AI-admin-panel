@@ -21,14 +21,17 @@ const update = async (req, res) => {
   const contract = await Contract.findOneAndUpdate(
     { _id: req.params.id, company: req.user.company },
     req.body,
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
   if (!contract) return res.status(404).json({ success: false, message: 'Contract not found' });
   res.json({ success: true, data: contract });
 };
 
 const remove = async (req, res) => {
-  const contract = await Contract.findOneAndDelete({ _id: req.params.id, company: req.user.company });
+  const contract = await Contract.findOneAndDelete({
+    _id: req.params.id,
+    company: req.user.company,
+  });
   if (!contract) return res.status(404).json({ success: false, message: 'Contract not found' });
   res.json({ success: true, message: 'Contract deleted' });
 };

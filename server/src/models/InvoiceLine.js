@@ -30,7 +30,7 @@ const invoiceLineSchema = new mongoose.Schema(
     reviewedAt: { type: Date },
     reviewNote: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 invoiceLineSchema.index({ invoice: 1 });

@@ -9,7 +9,7 @@ const recoverySchema = new mongoose.Schema(
     feePct: { type: Number, default: 25 },
     recoveredAt: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model('Recovery', recoverySchema);

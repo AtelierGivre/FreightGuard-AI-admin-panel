@@ -1,25 +1,37 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const router = express.Router();
 const controller = require('../controllers/contractController');
 const { protect } = require('../middleware/auth');
-const { validate } = require('../middleware/errorHandler');
+const { validate, asyncHandler } = require('../middleware/errorHandler');
 
 router.use(protect);
 
-router.get('/', controller.list);
-router.get('/:id', controller.get);
-router.post(
-  '/',
-  [
-    body('carrierName').trim().notEmpty().withMessage('Carrier name is required'),
-    body('port').trim().notEmpty().withMessage('Port is required'),
-    body('freeDays').isInt({ min: 0 }).withMessage('Free days must be a positive integer'),
-  ],
-  validate,
-  controller.create
-);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
+const idRule = [param('id').isMongoId().withMessage('Invalid contract ID')];
+
+const createRules = [
+  body('carrierName').trim().notEmpty().withMessage('Carrier name is required'),
+  body('port').trim().notEmpty().withMessage('Port is required'),
+  body('freeDays').isInt({ min: 0 }).withMessage('Free days must be a non-negative integer'),
+  body('tiers').optional().isArray().withMessage('Tiers must be an array'),
+  body('currency')
+    .optional()
+    .isLength({ min: 3, max: 3 })
+    .withMessage('Currency must be a 3-letter code'),
+];
+
+const updateRules = [
+  ...idRule,
+  body('carrierName').optional().trim().notEmpty(),
+  body('port').optional().trim().notEmpty(),
+  body('freeDays').optional().isInt({ min: 0 }),
+  body('tiers').optional().isArray(),
+];
+
+router.get('/', asyncHandler(controller.list));
+router.get('/:id', idRule, validate, asyncHandler(controller.get));
+router.post('/', createRules, validate, asyncHandler(controller.create));
+router.put('/:id', updateRules, validate, asyncHandler(controller.update));
+router.delete('/:id', idRule, validate, asyncHandler(controller.remove));
 
 module.exports = router;

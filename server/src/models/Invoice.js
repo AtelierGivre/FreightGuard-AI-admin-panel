@@ -22,7 +22,7 @@ const invoiceSchema = new mongoose.Schema(
     },
     rawJson: { type: mongoose.Schema.Types.Mixed },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 invoiceSchema.index({ company: 1, createdAt: -1 });

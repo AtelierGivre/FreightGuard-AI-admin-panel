@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false },
     lastLogin: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.pre('save', async function (next) {

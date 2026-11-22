@@ -15,7 +15,7 @@ const disputeSchema = new mongoose.Schema(
     sentAt: { type: Date },
     notes: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 disputeSchema.index({ company: 1, status: 1 });

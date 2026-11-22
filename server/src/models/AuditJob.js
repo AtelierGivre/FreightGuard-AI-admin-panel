@@ -11,7 +11,7 @@ const auditJobSchema = new mongoose.Schema(
     rawJson: { type: mongoose.Schema.Types.Mixed },
     error: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model('AuditJob', auditJobSchema);

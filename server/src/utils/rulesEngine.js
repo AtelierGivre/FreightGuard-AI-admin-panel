@@ -3,7 +3,7 @@
  * Applies the verdict rules from PRD section F5 to each invoice line.
  */
 
-const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+const { round2 } = require('./round');
 
 const findTier = (tiers = [], day) => {
   const tier = tiers.find((t) => day >= t.dayFrom && day <= t.dayTo);
@@ -11,7 +11,7 @@ const findTier = (tiers = [], day) => {
 };
 
 const auditLine = (line, contract) => {
-  const { days = 0, rate = 0, billedAmount = 0, feeType = 'demurrage' } = line;
+  const { days = 0, rate = 0, billedAmount = 0 } = line;
 
   // Rule 5: No contract -> Skipped
   if (!contract) {
@@ -82,7 +82,8 @@ const auditInvoice = (lines, contract) => {
         ...result,
         verdict: 'invalid',
         correctAmount: 0,
-        reason: 'Duplicate charge: same fee type and description appears more than once on this invoice.',
+        reason:
+          'Duplicate charge: same fee type and description appears more than once on this invoice.',
         confidence: 0.93,
       };
     }

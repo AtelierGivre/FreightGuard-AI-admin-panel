@@ -8,7 +8,9 @@ export default function DataTable({ columns, rows, empty = 'No records found' })
         <thead>
           <tr>
             {columns.map((col, i) => (
-              <th key={i} className={col.numeric ? 'num' : ''}>{col.header}</th>
+              <th key={i} className={col.numeric ? 'num' : ''}>
+                {col.header}
+              </th>
             ))}
           </tr>
         </thead>

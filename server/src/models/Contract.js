@@ -23,7 +23,7 @@ const contractSchema = new mongoose.Schema(
     effectiveDate: { type: Date },
     notes: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 contractSchema.index({ company: 1, carrierName: 1, port: 1 }, { unique: true });
