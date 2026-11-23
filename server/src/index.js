@@ -6,6 +6,9 @@
  * this entry exports the Express app with a DB-readiness middleware installed
  * before every route. The connection promise is cached per function instance.
  */
+// Vercel's zero-config Express detection looks for a direct express import.
+const express = require('express');
+void express;
 const createApp = require('./createApp');
 const connectDB = require('./config/database');
 
