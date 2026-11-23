@@ -8,6 +8,22 @@ Repository: <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel>
 
 ---
 
+## Live demo
+
+Share these links with stakeholders:
+
+| What                  | Link                                                          |
+| --------------------- | ------------------------------------------------------------- |
+| App                   | <https://freightguard-ai-admin-panel.vercel.app>              |
+| Sign in (demo access) | <https://freightguard-ai-admin-panel.vercel.app/login>        |
+| Admin overview        | <https://freightguard-ai-admin-panel.vercel.app/admin>        |
+| Source code           | <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel> |
+
+On the sign-in page choose **Enter demo as Admin** — this deployment has no backend or MongoDB
+attached, so it runs in demo mode with sample data.
+
+---
+
 ## Stack
 
 | Layer          | Technology                                                              |
