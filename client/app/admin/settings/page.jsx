@@ -91,8 +91,8 @@ export default function AdminSettings() {
               <span className="mono">JWT + role-based access control</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate">Mode</span>
-              <span className="mono">{api.isDemo ? 'Demo (mock data)' : 'Live API'}</span>
+              <span className="text-slate">API endpoint</span>
+              <span className="mono">{api.apiBaseUrl || 'Not configured'}</span>
             </div>
           </div>
         </div>

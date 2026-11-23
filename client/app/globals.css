@@ -408,27 +408,6 @@ button {
     0 0 0 4px var(--border);
 }
 
-.demo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 650;
-  color: #0f766e;
-  background: #f0fdfa;
-  border: 1px solid #ccfbf1;
-  border-radius: 20px;
-  padding: 4px 10px;
-}
-
-.demo-badge .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--teal);
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
-}
-
 .mobile-menu-btn {
   display: none;
 }
@@ -1330,24 +1309,10 @@ textarea.form-control {
   text-decoration: underline;
 }
 
-.demo-hint {
-  background: rgba(125, 216, 245, 0.09);
-  border: 1px solid rgba(185, 236, 255, 0.24);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  font-size: 11.5px;
-  color: var(--ice);
-  margin-top: 20px;
-  line-height: 1.6;
-}
-
-.demo-hint strong {
-  color: var(--ink);
-}
-
-.demo-hint .btn {
-  width: auto;
-  margin-top: 12px;
+.auth-card .alert.error {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: #fecaca;
 }
 
 .loading-screen {
@@ -1442,30 +1407,6 @@ textarea.form-control {
 
 .landing-nav-links a:not(.btn):hover {
   color: var(--ice);
-}
-
-.landing .live-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--mint);
-  border: 1px solid rgba(159, 232, 200, 0.28);
-  background: rgba(159, 232, 200, 0.08);
-  border-radius: 20px;
-  padding: 5px 10px;
-}
-
-.landing .live-chip .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--mint);
-  box-shadow: 0 0 0 3px rgba(159, 232, 200, 0.14);
 }
 
 .landing .btn-outline {
@@ -1616,7 +1557,6 @@ textarea.form-control {
 
 .step-card,
 .landing .feature,
-.proof-band,
 .cta-band {
   background: linear-gradient(170deg, rgba(17, 25, 33, 0.52), rgba(6, 10, 14, 0.56));
   border: 1px solid var(--dark-line);
@@ -1686,37 +1626,6 @@ textarea.form-control {
   transition:
     transform 0.18s ease,
     border-color 0.18s ease;
-}
-
-.proof-band {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  padding: 24px;
-  margin-bottom: 20px;
-}
-
-.proof-stat {
-  padding: 0 22px;
-  border-right: 1px solid var(--dark-line);
-}
-
-.proof-stat:first-child {
-  padding-left: 0;
-}
-
-.proof-stat:last-child {
-  border-right: 0;
-}
-
-.proof-stat .mono-label {
-  margin-bottom: 8px;
-}
-
-.proof-stat strong {
-  font-size: 26px;
-  font-weight: 780;
-  letter-spacing: -0.035em;
-  font-variant-numeric: tabular-nums;
 }
 
 .cta-band {
@@ -1797,19 +1706,6 @@ textarea.form-control {
   .steps-grid,
   .landing .features {
     grid-template-columns: 1fr;
-  }
-
-  .proof-band {
-    grid-template-columns: 1fr 1fr;
-    gap: 20px 0;
-  }
-
-  .proof-stat:nth-child(2) {
-    border-right: 0;
-  }
-
-  .proof-stat:nth-child(3) {
-    padding-left: 0;
   }
 
   .cta-band {

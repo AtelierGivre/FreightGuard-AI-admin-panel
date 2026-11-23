@@ -13,7 +13,7 @@ The current build is deliberately a thin but complete vertical slice: **Next.js 
 Design principles applied during the cleanup:
 
 1. **One source of truth for business numbers.** Fee (`25`) and review threshold (`0.7`) live in shared constants on both sides.
-2. **No silent production fallbacks.** Demo data is explicit; live API failures surface as errors unless `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK=true` in local development.
+2. **No silent fallbacks.** API failures surface as errors in the UI; there is no mock-data fallback.
 3. **Company-scoped data by default.** Every user-owned query filters on `req.user.company`.
 4. **Explicit middleware pipeline.** Auth → RBAC → validation → async handler → centralised error handler.
 5. **Importable app.** `server/src/app.js` exports a factory; only `server.js` connects to MongoDB and listens.
@@ -30,7 +30,7 @@ Browser
   │     ├── components/   Layout, Protected, DataTable, KpiCard, StatusPill
   │     ├── context/      AuthProvider (JWT in localStorage, current user)
   │     ├── hooks/        useApiData (loading/error/reload)
-  │     └── lib/          api.js → HTTP or demoData.js
+  │     └── lib/          api.js → HTTP
   │
   ▼ HTTP / JSON + Authorization: Bearer <JWT>
 Express 4 API (server/src/app.js)
@@ -47,15 +47,11 @@ MongoDB
   disputes · recoveries · audit_jobs
 ```
 
-### Runtime modes
+### API mode
 
-| Mode                | Trigger                                             | Behaviour                                                                                                              |
-| ------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **Demo**            | `NEXT_PUBLIC_API_URL` unset                         | Every `api.*` call resolves from `client/lib/demoData.js`. No backend needed. Demo login stores `demo-token`.          |
-| **Live**            | `NEXT_PUBLIC_API_URL` set                           | Real HTTP calls to Express. Invalid/expired tokens are rejected by `GET /api/auth/me` and cleared from `localStorage`. |
-| **Live + fallback** | live **and** `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK=true` | Failed calls log a warning and show demo data. Intended only for local development. Never enable in production.        |
+There is a single runtime mode: the frontend requires `NEXT_PUBLIC_API_URL` and sends every `api.*` call over HTTP to the Express API. Without it, the app shows a configuration error. Invalid/expired tokens are rejected by `GET /api/auth/me` and cleared from `localStorage`; failed calls surface to the UI.
 
-`api.getMe()` intentionally has **no fallback** in live mode: a stale token must clear the session rather than silently restore a demo admin.
+`api.getMe()` clears the session on a stale token rather than masking the failure.
 
 ---
 
@@ -97,7 +93,7 @@ Interactive pages start with `'use client';`. `client/app/layout.jsx` wraps the 
 const { user, loading, login, register, logout, isStaff } = useAuth();
 ```
 
-On mount it reads `fg_token` from `localStorage`, calls `api.getMe()` in live mode, sets `user`, and clears the token on failure. `loading` stays true until restoration finishes so `<Protected>` does not redirect a valid user on first paint.
+On mount it reads `fg_token` from `localStorage`, calls `api.getMe()`, sets `user`, and clears the token on failure. `loading` stays true until restoration finishes so `<Protected>` does not redirect a valid user on first paint.
 
 `<Protected roles={[...]}>` checks `user`/`loading` and redirects to `/login` or an unauthorised state. Import roles from `client/lib/constants.js`.
 
@@ -117,11 +113,10 @@ const { data, loading, error, reload, setData } = useApiData(api.getDashboard);
 
 `client/lib/api.js` is the **only** place that knows about HTTP details:
 
-- builds the base URL from `NEXT_PUBLIC_API_URL`;
+- builds the base URL from the required `NEXT_PUBLIC_API_URL`;
 - attaches `Authorization: Bearer <token>` from `localStorage`;
-- parses JSON safely and throws readable errors for non-JSON responses;
-- implements demo equivalents for every method so the whole UI is reviewable offline;
-- stores the JWT on login/register in both demo and live mode.
+- parses JSON safely and throws readable errors for non-JSON responses and failed requests;
+- stores the JWT on login/register.
 
 Adding a page without adding its method here is a review blocker (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
 
@@ -131,7 +126,6 @@ Adding a page without adding its method here is a review blocker (see [CONTRIBUT
 | ------------------------- | ------------------------------------------------------------------------------------------------ |
 | `client/lib/constants.js` | `DEFAULT_FEE_PCT = 25`, `REVIEW_CONFIDENCE_THRESHOLD = 0.7`, `ROLES`, `STAFF_ROLES`, `TOKEN_KEY` |
 | `client/lib/format.js`    | `money()`, `confidencePct()`, `initials()`, `formatDate()`                                       |
-| `client/lib/demoData.js`  | Mock invoices, lines, contracts, users, disputes and KPI values                                  |
 
 Components must not redefine money formatting or hardcode role strings.
 
@@ -279,7 +273,7 @@ All models include `createdAt` / `updatedAt`. See [PROJECT_PLAN.md](PROJECT_PLAN
 - JWT secret validated in production; explicit CORS origin; Helmet headers.
 - Input validation on all mutating routes and for resource ids/pagination/review enums.
 - Centralised errors never leak stack traces.
-- Frontend demo fallback is opt-in and off by default.
+- Frontend requires `NEXT_PUBLIC_API_URL`; a missing URL shows a configuration error and API failures surface to the UI.
 - Admin self-lockout guards.
 - No `dangerouslySetInnerHTML` and no untrusted HTML rendering in the 45% build.
 
@@ -306,7 +300,7 @@ Drafts are preserved under `deferred/`. Do not import from them until a unit is 
 
 - Upgraded Next.js from 14.2.35 to **16.4.6** (security) and React from 18.3.1 to **19.3.1**, removing the Next.js deprecation warning without application-code changes.
 - Added shared constants/formatters and removed duplicated money/rounding logic.
-- Rewrote API client with safe JSON parsing and explicit demo/fallback behaviour.
+- Rewrote API client with safe JSON parsing and explicit error handling.
 - Fixed live dashboard KPI to return `totalBilled` (matching the table).
 - Fixed invoice deletion so line items are only removed after company ownership is confirmed.
 - Wrapped all async controllers with `asyncHandler`.

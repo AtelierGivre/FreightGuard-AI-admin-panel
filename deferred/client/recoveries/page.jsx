@@ -5,7 +5,7 @@ import Layout from '@/components/Layout';
 import Protected from '@/components/Protected';
 import KpiCard from '@/components/KpiCard';
 import DataTable from '@/components/DataTable';
-import { recoveries } from '@/lib/demoData';
+import { recoveries } from '../lib/demoData';
 
 const money = (n) => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

@@ -70,7 +70,7 @@ A working, end-to-end slice that still uses all three mandated technologies:
 - **Express REST API** with health check, auth, contracts, invoices, dashboard and admin routes.
 - **MongoDB** with all 8 collections and the indexes the PRD requires.
 - **Role-based access**: `user` → workspace; `operator` → workspace + review queue + oversight; `admin` → everything including user management.
-- **Demo mode**: if no backend URL is configured, the frontend runs on mock data so the UI and admin panel can be reviewed without a database.
+- **Live API client**: every `api.*` call goes over HTTP to `NEXT_PUBLIC_API_URL`; a missing URL shows a configuration error instead of data.
 - **Audit rules engine**: basic verdicts (ok / overcharged / invalid / skipped) with reasons and confidence scores.
 - **Teammate-ready tooling**: shared constants/formatters, ESLint 9 + Prettier + EditorConfig, GitHub Actions CI, PR template, and detailed docs (`ARCHITECTURE.md`, `API.md`, `DEVELOPMENT.md`, `GLOSSARY.md`, `CONTRIBUTING.md`).
 
@@ -126,8 +126,8 @@ Dispute letter/recovery endpoints, file upload, export, notification and payment
 
 ```bash
 npm install
-cp .env.example .env          # set MONGO_URI, JWT_SECRET, CLIENT_URL as needed
-npm run seed                  # creates admin, operator, demo company
+cp .env.example .env          # set MONGO_URI, JWT_SECRET, CLIENT_URL, NEXT_PUBLIC_API_URL as needed
+npm run seed                  # creates admin, operator, starter company
 npm run dev                   # Express on :5000, Next.js on :3000
 
 # Quality gate (same commands as CI)
@@ -135,13 +135,13 @@ npm run check                 # lint + format:check + build
 npm audit --audit-level=high
 ```
 
-Demo accounts after seeding:
+Seed accounts after seeding:
 
 - Admin: `admin@freightguard.ai` / `Admin@12345`
 - Operator: `operator@freightguard.ai` / `Operator@12345`
 - User: `priya@harborline.com` / `Demo@12345`
 
-Without a backend, open `/login` and choose **Enter demo as Admin** to explore the UI on mock data.
+The frontend requires `NEXT_PUBLIC_API_URL`; without it the app shows a configuration error instead of data.
 
 ---
 

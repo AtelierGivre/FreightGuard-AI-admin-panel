@@ -8,19 +8,16 @@ Repository: <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel>
 
 ---
 
-## Live demo
+## Live app
 
 Share these links with stakeholders:
 
-| What                  | Link                                                          |
-| --------------------- | ------------------------------------------------------------- |
-| App                   | <https://freightguard-ai-admin-panel.vercel.app>              |
-| Sign in (demo access) | <https://freightguard-ai-admin-panel.vercel.app/login>        |
-| Admin overview        | <https://freightguard-ai-admin-panel.vercel.app/admin>        |
-| Source code           | <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel> |
-
-On the sign-in page choose **Enter demo as Admin** — this deployment has no backend or MongoDB
-attached, so it runs in demo mode with sample data.
+| What           | Link                                                          |
+| -------------- | ------------------------------------------------------------- |
+| App            | <https://freightguard-ai-admin-panel.vercel.app>              |
+| Sign in        | <https://freightguard-ai-admin-panel.vercel.app/login>        |
+| Admin overview | <https://freightguard-ai-admin-panel.vercel.app/admin>        |
+| Source code    | <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel> |
 
 ---
 
@@ -49,7 +46,7 @@ freightguard-ai/
 │   ├── components/             Reusable UI (Layout, KpiCard, DataTable, StatusPill, Protected)
 │   ├── context/                AuthProvider (session + current user)
 │   ├── hooks/                  useApiData (loading/error/reload state)
-│   └── lib/                    API client, constants, formatters, demo data
+│   └── lib/                    API client, constants, formatters
 ├── server/                     Express REST API
 │   └── src/
 │       ├── config/             Env validation, MongoDB connection, shared constants
@@ -78,27 +75,23 @@ freightguard-ai/
 
 ## Run locally
 
-Prerequisites: Node.js 20+, npm 10+, MongoDB running locally (only for live mode).
+Prerequisites: Node.js 20+, npm 10+, MongoDB running locally.
 
 ```bash
 npm install
 cp .env.example .env
-# edit .env → MONGO_URI, JWT_SECRET, CLIENT_URL, admin credentials
-npm run seed          # optional: load demo data into MongoDB
+# edit .env → MONGO_URI, JWT_SECRET, CLIENT_URL, NEXT_PUBLIC_API_URL, admin credentials
+npm run seed          # optional: load starter records into MongoDB
 npm run dev           # Express :5000, Next.js :3000
 ```
 
 Open <http://localhost:3000>.
 
-### Demo mode (no MongoDB required)
-
-If `NEXT_PUBLIC_API_URL` is **unset**, the frontend serves mock data from `client/lib/demoData.js`. On `/login`, choose **Enter demo as Admin** to explore the admin panel. A demo token is stored in `localStorage` so page refreshes keep the session.
-
-`NEXT_PUBLIC_ALLOW_DEMO_FALLBACK` is a separate, development-only flag. When `true` in live mode, failed API calls display demo data. **Never enable it in production** — it can hide real outages behind plausible-looking mock numbers.
+`NEXT_PUBLIC_API_URL` is required for the frontend. When it is missing, the app shows a configuration error instead of any data.
 
 ---
 
-## Demo accounts (after seeding)
+## Seed accounts (after seeding)
 
 | Role     | Email                      | Password         |
 | -------- | -------------------------- | ---------------- |

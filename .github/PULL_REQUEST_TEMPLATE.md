@@ -24,7 +24,6 @@
 
 - [ ] `npm run check` (lint + format:check + build)
 - [ ] `npm audit --audit-level=high`
-- [ ] Manual check in demo mode
 - [ ] Manual check in live mode (if API/DB behaviour changed)
 
 ## Review checklist

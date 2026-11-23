@@ -408,13 +408,6 @@ The fee comes from `DEFAULT_FEE_PCT` (default 25), shared with the seed script a
 
 ---
 
-## 8. Client-side demo equivalents
+## 8. Client API behavior
 
-`client/lib/api.js` implements a demo version of every method above when `NEXT_PUBLIC_API_URL` is unset. Demo methods:
-
-- return data from `client/lib/demoData.js`;
-- mutate in-memory arrays for create/review/update so the UI behaves realistically;
-- store a `demo-token` so refreshes keep the admin session;
-- never mimic server-side RBAC — role guards are still enforced by `<Protected>` in the UI.
-
-In live mode, failed calls throw unless `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK=true` (local development only).
+`client/lib/api.js` sends every `api.*` call over HTTP to the API base URL in `NEXT_PUBLIC_API_URL`. That variable is required: when it is missing, the app shows a configuration error. Failed calls throw and the UI renders the error. There is no demo fallback and no mock data.

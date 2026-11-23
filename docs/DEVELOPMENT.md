@@ -10,7 +10,7 @@ This guide covers local setup, daily commands, common workflows and troubleshoot
 | ------- | ------------------- | -------------------------------------------------------------------------- |
 | Node.js | 20+                 | Required by Next.js 16                                                     |
 | npm     | 10+                 | Workspaces are used at the root                                            |
-| MongoDB | 6+ or MongoDB Atlas | Only needed for **live** mode                                              |
+| MongoDB | 6+ or MongoDB Atlas | Local MongoDB or Atlas connection                                          |
 | Git     | any recent version  | GitHub repo: <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel> |
 
 Check your versions:
@@ -35,28 +35,7 @@ cp .env.example .env
 
 ---
 
-## 3. Choose a runtime mode
-
-### Option A — Demo mode (fastest, no database)
-
-1. In `.env`, **comment out** `NEXT_PUBLIC_API_URL`:
-
-   ```env
-   # NEXT_PUBLIC_API_URL=http://localhost:5000/api
-   NEXT_PUBLIC_ALLOW_DEMO_FALLBACK=false
-   ```
-
-2. Run only the frontend:
-
-   ```bash
-   npm run dev -w client
-   ```
-
-3. Open <http://localhost:3000> → `/login` → **Enter demo as Admin**.
-
-All data comes from `client/lib/demoData.js`. You can review dashboard, invoices, contracts and every admin screen without MongoDB.
-
-### Option B — Live mode (full stack)
+## 3. Run locally
 
 1. Make sure MongoDB is running locally (default `mongodb://127.0.0.1:27017/freightguard`) or set `MONGO_URI` to your Atlas connection string.
 2. In `.env`:
@@ -66,10 +45,11 @@ All data comes from `client/lib/demoData.js`. You can review dashboard, invoices
    JWT_SECRET=replace-with-a-long-random-string
    CLIENT_URL=http://localhost:3000
    NEXT_PUBLIC_API_URL=http://localhost:5000/api
-   NEXT_PUBLIC_ALLOW_DEMO_FALLBACK=false
    ```
 
-3. Seed demo users/contracts/invoices (optional but recommended):
+   `NEXT_PUBLIC_API_URL` is required. If it is missing, the frontend shows a configuration error.
+
+3. Seed starter users/contracts/invoices (optional but recommended):
 
    ```bash
    npm run seed
@@ -83,7 +63,7 @@ All data comes from `client/lib/demoData.js`. You can review dashboard, invoices
    # client: http://localhost:3000
    ```
 
-5. Sign in with one of the seeded accounts:
+5. Sign in with one of the seed accounts:
 
    | Role     | Email                      | Password         |
    | -------- | -------------------------- | ---------------- |
@@ -91,30 +71,29 @@ All data comes from `client/lib/demoData.js`. You can review dashboard, invoices
    | Operator | `operator@freightguard.ai` | `Operator@12345` |
    | User     | `priya@harborline.com`     | `Demo@12345`     |
 
-> `npm run seed` **clears all collections** before inserting demo data. Do not run it against a database with data you care about.
+> `npm run seed` **clears all collections** before inserting starter records. Do not run it against a database with data you care about.
 
 ---
 
 ## 4. Environment variables
 
-| Variable                          | Where used    | Default                 | Purpose                                              |
-| --------------------------------- | ------------- | ----------------------- | ---------------------------------------------------- |
-| `PORT`                            | server        | `5000`                  | HTTP port                                            |
-| `NODE_ENV`                        | server        | `development`           | Controls Morgan logging and production safety checks |
-| `CLIENT_URL`                      | server        | `http://localhost:3000` | Allowed CORS origin; required in production          |
-| `MONGO_URI`                       | server        | local MongoDB URL       | Database connection                                  |
-| `JWT_SECRET`                      | server        | dev-only fallback       | Signing key; **must** be set in production           |
-| `JWT_EXPIRE`                      | server        | `7d`                    | Token lifetime                                       |
-| `DEFAULT_FEE_PCT`                 | server + seed | `25`                    | Contingency fee on recovered money                   |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD`  | seed          | admin credentials       | Bootstrap admin account                              |
-| `NEXT_PUBLIC_API_URL`             | client        | unset                   | Express API base URL; unset = demo mode              |
-| `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK` | client        | `false`                 | Failed live calls show demo data (local only)        |
+| Variable                         | Where used    | Default                 | Purpose                                                         |
+| -------------------------------- | ------------- | ----------------------- | --------------------------------------------------------------- |
+| `PORT`                           | server        | `5000`                  | HTTP port                                                       |
+| `NODE_ENV`                       | server        | `development`           | Controls Morgan logging and production safety checks            |
+| `CLIENT_URL`                     | server        | `http://localhost:3000` | Allowed CORS origin; required in production                     |
+| `MONGO_URI`                      | server        | local MongoDB URL       | Database connection                                             |
+| `JWT_SECRET`                     | server        | dev-only fallback       | Signing key; **must** be set in production                      |
+| `JWT_EXPIRE`                     | server        | `7d`                    | Token lifetime                                                  |
+| `DEFAULT_FEE_PCT`                | server + seed | `25`                    | Contingency fee on recovered money                              |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed          | admin credentials       | Bootstrap admin account                                         |
+| `NEXT_PUBLIC_API_URL`            | client        | required                | Express API base URL; missing value shows a configuration error |
 
-Production safety behaviour:
+Configuration and safety behaviour:
 
 - `NODE_ENV=production` + default `JWT_SECRET` → server throws at startup.
 - `NODE_ENV=production` without `CLIENT_URL` → warning; CORS falls back to `http://localhost:3000`.
-- `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK=true` in live mode logs a warning when a call fails and displays mock data. Keep it false anywhere numbers matter.
+- Missing `NEXT_PUBLIC_API_URL` → frontend shows a configuration error; no data is rendered.
 
 ---
 
@@ -128,7 +107,7 @@ Production safety behaviour:
 | `npm run dev -w client` | Frontend only                                    |
 | `npm run build`         | Production Next.js build                         |
 | `npm start`             | Starts the Express API in production mode        |
-| `npm run seed`          | Reseeds MongoDB with demo data                   |
+| `npm run seed`          | Reseeds MongoDB with starter records             |
 | `npm run lint`          | ESLint across `client/` and `server/`            |
 | `npm run lint:fix`      | ESLint with safe auto-fixes                      |
 | `npm run format`        | Prettier write across the repo                   |
@@ -153,7 +132,7 @@ CI runs the same checks on every push and pull request to `main` (see `.github/w
 1. Route in `server/src/routes/<domain>Routes.js`: validation, `protect`, `authorize`, `asyncHandler`.
 2. Controller in `server/src/controllers/<domain>Controller.js`.
 3. Scope query to `req.user.company` unless it is an intentional admin oversight route.
-4. Client method in `client/lib/api.js`, including a demo branch if the UI should work offline.
+4. Client method in `client/lib/api.js` that calls the live API.
 5. Document in `docs/API.md`.
 6. Run `npm run check`.
 
@@ -178,18 +157,17 @@ Never hardcode `25` or `0.7` in a component or controller.
 
 ## 7. Troubleshooting
 
-| Symptom                                                   | Likely cause                                                   | Fix                                                                                 |
-| --------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `MongoDB connection error` on `npm run dev`               | MongoDB not running or bad `MONGO_URI`                         | Start MongoDB or use demo mode (comment out `NEXT_PUBLIC_API_URL`)                  |
-| `JWT_SECRET must be set...` in production                 | `NODE_ENV=production` with default secret                      | Set a long random `JWT_SECRET`                                                      |
-| Browser shows `Cannot reach the API`                      | Wrong `NEXT_PUBLIC_API_URL`, API not running, or CORS mismatch | Check API health at `/api/health`; match `CLIENT_URL` to frontend origin            |
-| Login works but user is admin in demo without credentials | Demo mode active                                               | Expected; set `NEXT_PUBLIC_API_URL` for live auth                                   |
-| Stale admin session after token change                    | Old `fg_token` in `localStorage`                               | Clear site storage or sign out; live `/auth/me` clears invalid tokens automatically |
-| Dashboard numbers look like mock data                     | `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK=true` or API failing          | Set flag to false and inspect the failed request                                    |
-| `react/no-unescaped-entities` lint error                  | Raw apostrophe in JSX text                                     | Use `&apos;` or curly braces                                                        |
-| `Cannot access refs during render`                        | Assigning `ref.current` in render                              | Update refs inside `useEffect` (see `useApiData.js`)                                |
-| `Pages directory cannot be found` ESLint warning          | Next config expecting legacy pages                             | `@next/next/no-html-link-for-pages` is disabled in `eslint.config.mjs`              |
-| Prettier check fails in CI                                | Local formatting drift                                         | Run `npm run format` and commit the result                                          |
+| Symptom                                          | Likely cause                                                   | Fix                                                                            |
+| ------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `MongoDB connection error` on `npm run dev`      | MongoDB not running or bad `MONGO_URI`                         | Start MongoDB or check `MONGO_URI`                                             |
+| `JWT_SECRET must be set...` in production        | `NODE_ENV=production` with default secret                      | Set a long random `JWT_SECRET`                                                 |
+| Browser shows `Cannot reach the API`             | Wrong `NEXT_PUBLIC_API_URL`, API not running, or CORS mismatch | Check API health at `/api/health`; match `CLIENT_URL` to frontend origin       |
+| Stale admin session after token change           | Old `fg_token` in `localStorage`                               | Clear site storage or sign out; `/auth/me` clears invalid tokens automatically |
+| App shows a configuration error                  | `NEXT_PUBLIC_API_URL` is missing                               | Set it to the Express API base URL in `.env` and restart the client            |
+| `react/no-unescaped-entities` lint error         | Raw apostrophe in JSX text                                     | Use `&apos;` or curly braces                                                   |
+| `Cannot access refs during render`               | Assigning `ref.current` in render                              | Update refs inside `useEffect` (see `useApiData.js`)                           |
+| `Pages directory cannot be found` ESLint warning | Next config expecting legacy pages                             | `@next/next/no-html-link-for-pages` is disabled in `eslint.config.mjs`         |
+| Prettier check fails in CI                       | Local formatting drift                                         | Run `npm run format` and commit the result                                     |
 
 ---
 
@@ -224,4 +202,4 @@ No database is needed because the build is static generation and `app.js` does n
 - Read the error message from `npm run check` before changing code.
 - Check [docs/API.md](API.md) for the expected response shape.
 - Check [docs/ARCHITECTURE.md](ARCHITECTURE.md) for the middleware order and company-scoping rules.
-- Ask in an issue with: command run, expected vs actual, OS, Node version, and demo vs live mode.
+- Ask in an issue with: command run, expected vs actual, OS, Node version, and the `NEXT_PUBLIC_API_URL` you used.

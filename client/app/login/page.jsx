@@ -28,22 +28,16 @@ export default function Login() {
     }
   };
 
-  const demoLogin = async () => {
-    setBusy(true);
-    try {
-      await login('admin@freightguard.ai', 'Admin@12345');
-      router.push('/admin');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <AuthShell>
       <h2>Welcome back</h2>
       <p className="sub">Sign in to your recovery workspace.</p>
+      {!api.isConfigured && (
+        <div className="alert error mb-16" role="alert">
+          Backend is not configured. Set <span className="mono">NEXT_PUBLIC_API_URL</span> and
+          rebuild the client.
+        </div>
+      )}
       {error && <div className="alert error mb-16">{error}</div>}
       <form onSubmit={submit}>
         <div className="field">
@@ -76,15 +70,6 @@ export default function Login() {
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
-      {api.isDemo && (
-        <div className="demo-hint">
-          <strong>Demo workspace.</strong> No backend is connected, so you can explore the full
-          product with sample data — including the admin panel.
-          <button className="btn btn-outline btn-sm" onClick={demoLogin} disabled={busy}>
-            Enter demo as Admin
-          </button>
-        </div>
-      )}
       <div className="auth-switch">
         New here? <Link href="/register">Create an account</Link>
       </div>

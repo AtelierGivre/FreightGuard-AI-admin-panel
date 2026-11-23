@@ -89,17 +89,16 @@ Shared vocabulary for demurrage/detention domain terms, product concepts and cod
 
 ## Technical terms
 
-| Term                | Meaning                                                                                                         |
-| ------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **App Router**      | Next.js routing system using the `app/` directory and file-based route folders.                                 |
-| **`'use client';`** | Directive marking a component as client-side interactive.                                                       |
-| **AuthProvider**    | React context owning `user`, `loading`, `login`, `register`, `logout`, `isStaff`.                               |
-| **`useApiData`**    | Reusable hook providing `data`, `loading`, `error`, `reload`, `setData` for page fetches.                       |
-| **Demo mode**       | Running the frontend with `NEXT_PUBLIC_API_URL` unset; all API calls resolve from `demoData.js`.                |
-| **Fallback flag**   | `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK`; when true in live mode, failed calls show demo data. Local development only. |
-| **App factory**     | `createApp()` in `server/src/app.js`; configures middleware without connecting to MongoDB.                      |
-| **Entry point**     | `server/src/server.js`; connects to MongoDB and calls `listen()`.                                               |
-| **`asyncHandler`**  | Wrapper that forwards rejected async controller promises to Express error middleware.                           |
-| **Envelope**        | Consistent JSON shape: `{ success, data, ... }` or `{ success: false, message }`.                               |
-| **Workspace**       | npm workspaces (`client`, `server`) managed from the root `package.json`.                                       |
-| **Deferred**        | Draft files for units 10–20 under `deferred/`; not imported by production code.                                 |
+| Term                | Meaning                                                                                                                                                                |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **App Router**      | Next.js routing system using the `app/` directory and file-based route folders.                                                                                        |
+| **`'use client';`** | Directive marking a component as client-side interactive.                                                                                                              |
+| **AuthProvider**    | React context owning `user`, `loading`, `login`, `register`, `logout`, `isStaff`.                                                                                      |
+| **`useApiData`**    | Reusable hook providing `data`, `loading`, `error`, `reload`, `setData` for page fetches.                                                                              |
+| **Live API mode**   | The only runtime mode: every `api.*` call goes over HTTP to the required `NEXT_PUBLIC_API_URL`. A missing URL shows a configuration error; failures surface to the UI. |
+| **App factory**     | `createApp()` in `server/src/app.js`; configures middleware without connecting to MongoDB.                                                                             |
+| **Entry point**     | `server/src/server.js`; connects to MongoDB and calls `listen()`.                                                                                                      |
+| **`asyncHandler`**  | Wrapper that forwards rejected async controller promises to Express error middleware.                                                                                  |
+| **Envelope**        | Consistent JSON shape: `{ success, data, ... }` or `{ success: false, message }`.                                                                                      |
+| **Workspace**       | npm workspaces (`client`, `server`) managed from the root `package.json`.                                                                                              |
+| **Deferred**        | Draft files for units 10–20 under `deferred/`; not imported by production code.                                                                                        |

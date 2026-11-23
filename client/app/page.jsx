@@ -47,13 +47,6 @@ const features = [
   },
 ];
 
-const stats = [
-  { label: 'Invoices in demo', value: '05' },
-  { label: 'Flagged amount', value: '$1,840' },
-  { label: 'Recovered', value: '$2,845' },
-  { label: 'Recovery rate', value: '58%' },
-];
-
 export default function Landing() {
   return (
     <div className="landing">
@@ -69,9 +62,6 @@ export default function Landing() {
             </span>
           </Link>
           <div className="landing-nav-links">
-            <span className="live-chip">
-              <span className="dot" /> Live demo
-            </span>
             <Link href="#how">How it works</Link>
             <Link href="#features">Features</Link>
             <Link
@@ -99,7 +89,7 @@ export default function Landing() {
           </p>
           <div className="cta">
             <Link href="/login" className="btn btn-primary">
-              Enter demo workspace <ArrowRight size={16} />
+              Open workspace <ArrowRight size={16} />
             </Link>
             <Link href="#how" className="btn btn-outline">
               See how it works
@@ -159,23 +149,16 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="proof-band">
-          {stats.map((stat) => (
-            <div className="proof-stat" key={stat.label}>
-              <span className="mono-label">{stat.label}</span>
-              <strong>{stat.value}</strong>
-            </div>
-          ))}
-        </section>
-
         <section className="cta-band">
           <div>
             <span className="mono-label">Ready when you are</span>
             <h2>Open the workspace.</h2>
-            <p>Explore the full admin panel with realistic sample data. No setup required.</p>
+            <p>
+              Sign in with your team account to audit invoices, review flags and manage disputes.
+            </p>
           </div>
           <Link href="/login" className="btn btn-primary">
-            Enter demo <ArrowRight size={16} />
+            Open workspace <ArrowRight size={16} />
           </Link>
         </section>
       </main>
@@ -184,7 +167,7 @@ export default function Landing() {
         <span>© {new Date().getFullYear()} FreightGuard AI · Demurrage recovery workspace</span>
         <span>
           <Gauge size={12} style={{ verticalAlign: '-2px', marginRight: 5 }} />
-          Demo data · no backend attached
+          Rules-based audit · Operator-reviewed disputes
         </span>
       </footer>
     </div>

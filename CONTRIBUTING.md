@@ -13,12 +13,12 @@ git clone https://github.com/AtelierGivre/FreightGuard-AI-admin-panel.git
 cd FreightGuard-AI-admin-panel
 npm install
 cp .env.example .env
-# fill in MONGO_URI, JWT_SECRET, CLIENT_URL as needed
+# fill in MONGO_URI, JWT_SECRET, CLIENT_URL, NEXT_PUBLIC_API_URL as needed
 npm run seed          # optional, populates MongoDB
 npm run dev           # API :5000, frontend :3000
 ```
 
-Read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for demo mode, environment variables and troubleshooting.
+Read [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for environment variables and troubleshooting.
 
 ---
 
@@ -56,7 +56,7 @@ Allowed types: `feat`, `fix`, `docs`, `refactor`, `style`, `chore`, `test`, `ci`
 Examples:
 
 ```text
-fix(dashboard): report totalBilled instead of amount in live mode
+fix(dashboard): report totalBilled instead of amount
 feat(admin): add pagination validation to review queue
 docs(api): document auth and error response shapes
 chore: add ESLint and Prettier configuration
@@ -116,7 +116,7 @@ Reviewers should verify:
 - Call the API only through `client/lib/api.js`. Do not scatter `fetch()` calls in components.
 - Route guards use `<Protected roles={...}>`; import roles from `client/lib/constants.js`.
 - Navigation uses Next.js `<Link>` so it works with keyboard and client-side routing.
-- Never silently fall back to demo data in production (`NEXT_PUBLIC_ALLOW_DEMO_FALLBACK` must stay false).
+- `NEXT_PUBLIC_API_URL` is required; API failures must surface to the UI instead of returning mock data.
 
 ### Backend
 
@@ -135,7 +135,7 @@ Reviewers should verify:
 - Add or change schemas in `server/src/models/`.
 - Keep fields consistent with [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) section 5.
 - Use Mongoose validators for data that must be valid regardless of the route.
-- Do not write migration scripts without team agreement; this stage uses `npm run seed` for demo data.
+- Do not write migration scripts without team agreement; this stage uses `npm run seed` for starter records.
 
 ---
 
@@ -148,7 +148,7 @@ Reviewers should verify:
 3. Apply `protect`, then `authorize(...)` if staff-only, then `validate`, then `asyncHandler(controller)`.
 4. Add the controller in `server/src/controllers/<domain>Controller.js` and export it.
 5. Scope queries to `req.user.company` unless the route is intentionally platform-wide admin oversight.
-6. Add the client method to `client/lib/api.js` (including a demo implementation if the UI should be reviewable in demo mode).
+6. Add the client method to `client/lib/api.js` so the UI calls the live API.
 7. Document the endpoint in [docs/API.md](docs/API.md).
 
 ### New page
@@ -173,7 +173,7 @@ Reviewers should verify:
 - `JWT_SECRET` must be a long random string in production; the server throws at startup with the dev fallback.
 - `CLIENT_URL` controls CORS. Do not use `*` together with `credentials: true`.
 - Passwords are hashed with bcrypt; never log or return them. `protect` selects only `name email role company isActive`.
-- Keep `NEXT_PUBLIC_ALLOW_DEMO_FALLBACK=false` outside local development.
+- `NEXT_PUBLIC_API_URL` is required for the frontend; a missing value shows a configuration error, never mock data.
 - Admin self-demotion, self-deactivation and self-deletion are blocked in `adminController` — preserve that guard.
 - Do not introduce `dangerouslySetInnerHTML` without sanitisation.
 
@@ -211,4 +211,4 @@ Write for a teammate who has never seen the code: explain _why_, not only _what_
 
 - Check [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) first for setup issues.
 - Search existing issues/PRs before opening a new one.
-- Include the failing command, expected vs actual result, OS/Node version, and whether you are in demo or live mode.
+- Include the failing command, expected vs actual result, OS/Node version, and the `NEXT_PUBLIC_API_URL` you used.
