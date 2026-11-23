@@ -10,6 +10,7 @@ import {
   BadgeCheck,
   Gauge,
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 const steps = [
   {
@@ -62,6 +63,11 @@ export default function Landing() {
             </span>
           </Link>
           <div className="landing-nav-links">
+            {api.isPreview && (
+              <span className="preview-chip">
+                <span className="dot" /> Preview build
+              </span>
+            )}
             <Link href="#how">How it works</Link>
             <Link href="#features">Features</Link>
             <Link
@@ -89,7 +95,7 @@ export default function Landing() {
           </p>
           <div className="cta">
             <Link href="/login" className="btn btn-primary">
-              Open workspace <ArrowRight size={16} />
+              {api.isPreview ? 'Open preview' : 'Open workspace'} <ArrowRight size={16} />
             </Link>
             <Link href="#how" className="btn btn-outline">
               See how it works
@@ -154,11 +160,13 @@ export default function Landing() {
             <span className="mono-label">Ready when you are</span>
             <h2>Open the workspace.</h2>
             <p>
-              Sign in with your team account to audit invoices, review flags and manage disputes.
+              {api.isPreview
+                ? 'Explore the workspace with sample records while the live API is being connected.'
+                : 'Sign in with your team account to audit invoices, review flags and manage disputes.'}
             </p>
           </div>
           <Link href="/login" className="btn btn-primary">
-            Open workspace <ArrowRight size={16} />
+            {api.isPreview ? 'Open preview' : 'Open workspace'} <ArrowRight size={16} />
           </Link>
         </section>
       </main>
@@ -167,7 +175,9 @@ export default function Landing() {
         <span>© {new Date().getFullYear()} FreightGuard AI · Demurrage recovery workspace</span>
         <span>
           <Gauge size={12} style={{ verticalAlign: '-2px', marginRight: 5 }} />
-          Rules-based audit · Operator-reviewed disputes
+          {api.isPreview
+            ? 'Preview build · sample data · backend pending'
+            : 'Rules-based audit · Operator-reviewed disputes'}
         </span>
       </footer>
     </div>

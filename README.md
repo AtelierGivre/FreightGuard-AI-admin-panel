@@ -19,6 +19,18 @@ Share these links with stakeholders:
 | Admin overview | <https://freightguard-ai-admin-panel.vercel.app/admin>        |
 | Source code    | <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel> |
 
+### Temporary preview
+
+The current deployment runs in **temporary preview mode** (`NEXT_PUBLIC_PREVIEW_MODE=true`) because the backend is not connected yet: the frontend uses sample data from `client/lib/previewData.js`, offers an **Enter preview as Admin** button, and needs no backend or MongoDB. This is a temporary bridge, not the final product.
+
+To switch to real mode:
+
+1. Set `NEXT_PUBLIC_PREVIEW_MODE=false` and `NEXT_PUBLIC_API_URL` to the Express API base URL.
+2. Redeploy.
+3. Delete the preview data module (`client/lib/previewData.js`) and the preview UI branches.
+
+Preview mode never calls the API; in real mode there is no silent fallback — API failures still surface as errors.
+
 ---
 
 ## Stack
@@ -87,7 +99,7 @@ npm run dev           # Express :5000, Next.js :3000
 
 Open <http://localhost:3000>.
 
-`NEXT_PUBLIC_API_URL` is required for the frontend. When it is missing, the app shows a configuration error instead of any data.
+In real mode, `NEXT_PUBLIC_API_URL` is required for the frontend. When it is missing, the app shows a configuration error instead of any data; temporary preview mode (described under **Live app**) is the explicit exception.
 
 ---
 

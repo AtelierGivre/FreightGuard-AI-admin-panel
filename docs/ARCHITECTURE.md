@@ -13,7 +13,7 @@ The current build is deliberately a thin but complete vertical slice: **Next.js 
 Design principles applied during the cleanup:
 
 1. **One source of truth for business numbers.** Fee (`25`) and review threshold (`0.7`) live in shared constants on both sides.
-2. **No silent fallbacks.** API failures surface as errors in the UI; there is no mock-data fallback.
+2. **No silent fallbacks.** API failures surface as errors in the UI; there is no mock-data fallback. The only exception is the explicit, temporary preview mode described in [section 2](#api-mode-and-temporary-preview-mode).
 3. **Company-scoped data by default.** Every user-owned query filters on `req.user.company`.
 4. **Explicit middleware pipeline.** Auth → RBAC → validation → async handler → centralised error handler.
 5. **Importable app.** `server/src/app.js` exports a factory; only `server.js` connects to MongoDB and listens.
@@ -30,7 +30,8 @@ Browser
   │     ├── components/   Layout, Protected, DataTable, KpiCard, StatusPill
   │     ├── context/      AuthProvider (JWT in localStorage, current user)
   │     ├── hooks/        useApiData (loading/error/reload)
-  │     └── lib/          api.js → HTTP
+  │     └── lib/          api.js → HTTP (real mode)
+  │                       previewData.js → sample data (temporary preview)
   │
   ▼ HTTP / JSON + Authorization: Bearer <JWT>
 Express 4 API (server/src/app.js)
@@ -47,11 +48,16 @@ MongoDB
   disputes · recoveries · audit_jobs
 ```
 
-### API mode
+### API mode and temporary preview mode
 
-There is a single runtime mode: the frontend requires `NEXT_PUBLIC_API_URL` and sends every `api.*` call over HTTP to the Express API. Without it, the app shows a configuration error. Invalid/expired tokens are rejected by `GET /api/auth/me` and cleared from `localStorage`; failed calls surface to the UI.
+| Mode                                     | `NEXT_PUBLIC_PREVIEW_MODE` | `NEXT_PUBLIC_API_URL` | Data source                                           | Backend / MongoDB |
+| ---------------------------------------- | -------------------------- | --------------------- | ----------------------------------------------------- | ----------------- |
+| Real mode (default, final setup)         | `false` or unset           | required              | HTTP calls to the Express API via `client/lib/api.js` | required          |
+| Temporary preview mode (backend pending) | `true`                     | not used              | sample data from `client/lib/previewData.js`          | not needed        |
 
-`api.getMe()` clears the session on a stale token rather than masking the failure.
+Real mode requires both `NEXT_PUBLIC_PREVIEW_MODE=false` (or unset) and `NEXT_PUBLIC_API_URL`; without the URL the app shows a configuration error. Invalid/expired tokens are rejected by `GET /api/auth/me` and cleared from `localStorage`; failed calls surface to the UI. `api.getMe()` clears the session on a stale token rather than masking the failure. There is no silent fallback.
+
+Temporary preview mode is an explicit, temporary opt-in exception while the backend is being prepared: the frontend uses sample data from `client/lib/previewData.js`, offers an **Enter preview as Admin** button, and never calls the API. It is not the final product. To remove it: set `NEXT_PUBLIC_PREVIEW_MODE=false`, set `NEXT_PUBLIC_API_URL`, redeploy, then delete the preview data module and the preview UI branches.
 
 ---
 
@@ -113,7 +119,7 @@ const { data, loading, error, reload, setData } = useApiData(api.getDashboard);
 
 `client/lib/api.js` is the **only** place that knows about HTTP details:
 
-- builds the base URL from the required `NEXT_PUBLIC_API_URL`;
+- builds the base URL from `NEXT_PUBLIC_API_URL` (required in real mode; temporary preview mode bypasses this module);
 - attaches `Authorization: Bearer <token>` from `localStorage`;
 - parses JSON safely and throws readable errors for non-JSON responses and failed requests;
 - stores the JWT on login/register.
@@ -273,7 +279,7 @@ All models include `createdAt` / `updatedAt`. See [PROJECT_PLAN.md](PROJECT_PLAN
 - JWT secret validated in production; explicit CORS origin; Helmet headers.
 - Input validation on all mutating routes and for resource ids/pagination/review enums.
 - Centralised errors never leak stack traces.
-- Frontend requires `NEXT_PUBLIC_API_URL`; a missing URL shows a configuration error and API failures surface to the UI.
+- Frontend requires `NEXT_PUBLIC_API_URL` in real mode; a missing URL shows a configuration error and API failures surface to the UI. Temporary preview mode is the explicit opt-in exception.
 - Admin self-lockout guards.
 - No `dangerouslySetInnerHTML` and no untrusted HTML rendering in the 45% build.
 

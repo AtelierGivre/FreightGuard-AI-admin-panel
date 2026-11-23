@@ -94,6 +94,10 @@ export default function AdminSettings() {
               <span className="text-slate">API endpoint</span>
               <span className="mono">{api.apiBaseUrl || 'Not configured'}</span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-slate">Data source</span>
+              <span className="mono">{api.isPreview ? 'Preview (sample data)' : 'Live API'}</span>
+            </div>
           </div>
         </div>
       </Layout>

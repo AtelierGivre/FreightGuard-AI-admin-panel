@@ -47,7 +47,7 @@ cp .env.example .env
    NEXT_PUBLIC_API_URL=http://localhost:5000/api
    ```
 
-   `NEXT_PUBLIC_API_URL` is required. If it is missing, the frontend shows a configuration error.
+   `NEXT_PUBLIC_API_URL` is required in real mode. If it is missing, the frontend shows a configuration error; temporary preview mode is the explicit exception.
 
 3. Seed starter users/contracts/invoices (optional but recommended):
 
@@ -73,27 +73,36 @@ cp .env.example .env
 
 > `npm run seed` **clears all collections** before inserting starter records. Do not run it against a database with data you care about.
 
+### Temporary preview mode (backend pending)
+
+The current deployment uses **temporary preview mode** (`NEXT_PUBLIC_PREVIEW_MODE=true`) because the Express API/MongoDB are not connected yet. The frontend reads sample data from `client/lib/previewData.js`, shows an **Enter preview as Admin** button, and makes no HTTP calls — no backend or MongoDB is needed. This is a temporary bridge, not the final setup.
+
+Real mode requires `NEXT_PUBLIC_PREVIEW_MODE=false` (or unset) **and** `NEXT_PUBLIC_API_URL` pointing at the Express API. API failures in real mode still surface as errors; there is no silent fallback.
+
+To remove preview mode once the API is live: set `NEXT_PUBLIC_PREVIEW_MODE=false`, set `NEXT_PUBLIC_API_URL`, redeploy, then delete `client/lib/previewData.js` and the preview UI branches.
+
 ---
 
 ## 4. Environment variables
 
-| Variable                         | Where used    | Default                 | Purpose                                                         |
-| -------------------------------- | ------------- | ----------------------- | --------------------------------------------------------------- |
-| `PORT`                           | server        | `5000`                  | HTTP port                                                       |
-| `NODE_ENV`                       | server        | `development`           | Controls Morgan logging and production safety checks            |
-| `CLIENT_URL`                     | server        | `http://localhost:3000` | Allowed CORS origin; required in production                     |
-| `MONGO_URI`                      | server        | local MongoDB URL       | Database connection                                             |
-| `JWT_SECRET`                     | server        | dev-only fallback       | Signing key; **must** be set in production                      |
-| `JWT_EXPIRE`                     | server        | `7d`                    | Token lifetime                                                  |
-| `DEFAULT_FEE_PCT`                | server + seed | `25`                    | Contingency fee on recovered money                              |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed          | admin credentials       | Bootstrap admin account                                         |
-| `NEXT_PUBLIC_API_URL`            | client        | required                | Express API base URL; missing value shows a configuration error |
+| Variable                         | Where used    | Default                 | Purpose                                                                                                                                  |
+| -------------------------------- | ------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                           | server        | `5000`                  | HTTP port                                                                                                                                |
+| `NODE_ENV`                       | server        | `development`           | Controls Morgan logging and production safety checks                                                                                     |
+| `CLIENT_URL`                     | server        | `http://localhost:3000` | Allowed CORS origin; required in production                                                                                              |
+| `MONGO_URI`                      | server        | local MongoDB URL       | Database connection                                                                                                                      |
+| `JWT_SECRET`                     | server        | dev-only fallback       | Signing key; **must** be set in production                                                                                               |
+| `JWT_EXPIRE`                     | server        | `7d`                    | Token lifetime                                                                                                                           |
+| `DEFAULT_FEE_PCT`                | server + seed | `25`                    | Contingency fee on recovered money                                                                                                       |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | seed          | admin credentials       | Bootstrap admin account                                                                                                                  |
+| `NEXT_PUBLIC_API_URL`            | client        | required in real mode   | Express API base URL; missing value shows a configuration error                                                                          |
+| `NEXT_PUBLIC_PREVIEW_MODE`       | client        | `false`                 | **Temporary** opt-in: `true` uses sample data from `client/lib/previewData.js` and skips the API; must be `false` in real/production use |
 
 Configuration and safety behaviour:
 
 - `NODE_ENV=production` + default `JWT_SECRET` → server throws at startup.
 - `NODE_ENV=production` without `CLIENT_URL` → warning; CORS falls back to `http://localhost:3000`.
-- Missing `NEXT_PUBLIC_API_URL` → frontend shows a configuration error; no data is rendered.
+- Missing `NEXT_PUBLIC_API_URL` in real mode → frontend shows a configuration error; no data is rendered. Preview mode (`NEXT_PUBLIC_PREVIEW_MODE=true`) is the explicit exception and renders sample data instead.
 
 ---
 
@@ -157,17 +166,18 @@ Never hardcode `25` or `0.7` in a component or controller.
 
 ## 7. Troubleshooting
 
-| Symptom                                          | Likely cause                                                   | Fix                                                                            |
-| ------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `MongoDB connection error` on `npm run dev`      | MongoDB not running or bad `MONGO_URI`                         | Start MongoDB or check `MONGO_URI`                                             |
-| `JWT_SECRET must be set...` in production        | `NODE_ENV=production` with default secret                      | Set a long random `JWT_SECRET`                                                 |
-| Browser shows `Cannot reach the API`             | Wrong `NEXT_PUBLIC_API_URL`, API not running, or CORS mismatch | Check API health at `/api/health`; match `CLIENT_URL` to frontend origin       |
-| Stale admin session after token change           | Old `fg_token` in `localStorage`                               | Clear site storage or sign out; `/auth/me` clears invalid tokens automatically |
-| App shows a configuration error                  | `NEXT_PUBLIC_API_URL` is missing                               | Set it to the Express API base URL in `.env` and restart the client            |
-| `react/no-unescaped-entities` lint error         | Raw apostrophe in JSX text                                     | Use `&apos;` or curly braces                                                   |
-| `Cannot access refs during render`               | Assigning `ref.current` in render                              | Update refs inside `useEffect` (see `useApiData.js`)                           |
-| `Pages directory cannot be found` ESLint warning | Next config expecting legacy pages                             | `@next/next/no-html-link-for-pages` is disabled in `eslint.config.mjs`         |
-| Prettier check fails in CI                       | Local formatting drift                                         | Run `npm run format` and commit the result                                     |
+| Symptom                                            | Likely cause                                                   | Fix                                                                              |
+| -------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `MongoDB connection error` on `npm run dev`        | MongoDB not running or bad `MONGO_URI`                         | Start MongoDB or check `MONGO_URI`                                               |
+| `JWT_SECRET must be set...` in production          | `NODE_ENV=production` with default secret                      | Set a long random `JWT_SECRET`                                                   |
+| Browser shows `Cannot reach the API`               | Wrong `NEXT_PUBLIC_API_URL`, API not running, or CORS mismatch | Check API health at `/api/health`; match `CLIENT_URL` to frontend origin         |
+| Stale admin session after token change             | Old `fg_token` in `localStorage`                               | Clear site storage or sign out; `/auth/me` clears invalid tokens automatically   |
+| App shows a configuration error                    | `NEXT_PUBLIC_API_URL` is missing in real mode                  | Set it to the Express API base URL in `.env` and restart the client              |
+| App shows sample data / **Enter preview as Admin** | `NEXT_PUBLIC_PREVIEW_MODE=true` (temporary preview)            | Set it to `false`, set `NEXT_PUBLIC_API_URL`, redeploy, then remove preview code |
+| `react/no-unescaped-entities` lint error           | Raw apostrophe in JSX text                                     | Use `&apos;` or curly braces                                                     |
+| `Cannot access refs during render`                 | Assigning `ref.current` in render                              | Update refs inside `useEffect` (see `useApiData.js`)                             |
+| `Pages directory cannot be found` ESLint warning   | Next config expecting legacy pages                             | `@next/next/no-html-link-for-pages` is disabled in `eslint.config.mjs`           |
+| Prettier check fails in CI                         | Local formatting drift                                         | Run `npm run format` and commit the result                                       |
 
 ---
 

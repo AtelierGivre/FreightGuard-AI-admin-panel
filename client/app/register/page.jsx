@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthShell from '@/components/AuthShell';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 
 export default function Register() {
   const router = useRouter();
@@ -26,6 +27,22 @@ export default function Register() {
       setBusy(false);
     }
   };
+
+  if (api.isPreview) {
+    return (
+      <AuthShell>
+        <span className="mono-label">Temporary preview</span>
+        <h2>Preview mode is on.</h2>
+        <p className="sub">
+          Account creation is disabled while sample data is active. Use the preview login to explore
+          the workspace.
+        </p>
+        <Link href="/login" className="btn btn-primary">
+          Go to preview login
+        </Link>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell>

@@ -28,6 +28,37 @@ export default function Login() {
     }
   };
 
+  const previewLogin = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      await login('admin@freightguard.ai', 'preview');
+      router.push('/admin');
+    } catch (err) {
+      setError(err.message || 'Could not open the preview');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (api.isPreview) {
+    return (
+      <AuthShell>
+        <span className="mono-label">Temporary preview</span>
+        <h2>Sample data, real interface.</h2>
+        <p className="sub">
+          Explore the full workspace with sample records while the live API is being connected. This
+          preview will be removed when the backend is ready.
+        </p>
+        {error && <div className="alert error mb-16">{error}</div>}
+        <button className="btn btn-primary" onClick={previewLogin} disabled={busy}>
+          {busy ? 'Opening preview…' : 'Enter preview as Admin'}
+        </button>
+        <div className="auth-switch">Preview only · no real account required</div>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell>
       <h2>Welcome back</h2>

@@ -4,6 +4,8 @@ This repository is a shared workspace. The current product scope is **45% (units
 
 > **Ground rule:** discuss any major architecture change (new package, new data model, changing auth/RBAC strategy, switching frameworks, changing the fee model) in an issue or team discussion before opening a PR. Small refactors that preserve behaviour are welcome.
 
+> **Temporary preview:** The live deployment currently uses preview mode (`NEXT_PUBLIC_PREVIEW_MODE=true`) with sample data from `client/lib/previewData.js` because the backend is not connected yet. It is not the final product: **remove it before shipping real auth** — set `NEXT_PUBLIC_PREVIEW_MODE=false`, set `NEXT_PUBLIC_API_URL`, redeploy, then delete the preview data module and UI branches. Preview mode never calls the API; real mode has no silent fallback.
+
 ---
 
 ## 1. First-time setup
@@ -116,7 +118,7 @@ Reviewers should verify:
 - Call the API only through `client/lib/api.js`. Do not scatter `fetch()` calls in components.
 - Route guards use `<Protected roles={...}>`; import roles from `client/lib/constants.js`.
 - Navigation uses Next.js `<Link>` so it works with keyboard and client-side routing.
-- `NEXT_PUBLIC_API_URL` is required; API failures must surface to the UI instead of returning mock data.
+- In real mode (`NEXT_PUBLIC_PREVIEW_MODE=false` or unset), `NEXT_PUBLIC_API_URL` is required; API failures must surface to the UI instead of returning mock data. The temporary preview exception is noted at the top of this document.
 
 ### Backend
 
@@ -173,7 +175,7 @@ Reviewers should verify:
 - `JWT_SECRET` must be a long random string in production; the server throws at startup with the dev fallback.
 - `CLIENT_URL` controls CORS. Do not use `*` together with `credentials: true`.
 - Passwords are hashed with bcrypt; never log or return them. `protect` selects only `name email role company isActive`.
-- `NEXT_PUBLIC_API_URL` is required for the frontend; a missing value shows a configuration error, never mock data.
+- `NEXT_PUBLIC_API_URL` is required for the frontend in real mode (the temporary preview exception above does not call the API); a missing value shows a configuration error, never mock data.
 - Admin self-demotion, self-deactivation and self-deletion are blocked in `adminController` — preserve that guard.
 - Do not introduce `dangerouslySetInnerHTML` without sanitisation.
 

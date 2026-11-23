@@ -410,4 +410,4 @@ The fee comes from `DEFAULT_FEE_PCT` (default 25), shared with the seed script a
 
 ## 8. Client API behavior
 
-`client/lib/api.js` sends every `api.*` call over HTTP to the API base URL in `NEXT_PUBLIC_API_URL`. That variable is required: when it is missing, the app shows a configuration error. Failed calls throw and the UI renders the error. There is no demo fallback and no mock data.
+`client/lib/api.js` sends every `api.*` call over HTTP to the API base URL in `NEXT_PUBLIC_API_URL`. In real mode (`NEXT_PUBLIC_PREVIEW_MODE=false` or unset) that variable is required: when it is missing, the app shows a configuration error. Failed calls throw and the UI renders the error; there is no silent fallback or mock data. **Temporary preview mode** (`NEXT_PUBLIC_PREVIEW_MODE=true`) is an explicit exception that bypasses HTTP calls entirely and renders sample data from `client/lib/previewData.js`; it is temporary and must be removed once the live API is connected.
