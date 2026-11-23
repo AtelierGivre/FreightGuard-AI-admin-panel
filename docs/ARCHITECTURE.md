@@ -16,7 +16,7 @@ Design principles applied during the cleanup:
 2. **No silent fallbacks.** API failures surface as errors in the UI; there is no mock-data fallback. The only exception is the explicit, temporary preview mode described in [section 2](#api-mode-and-temporary-preview-mode).
 3. **Company-scoped data by default.** Every user-owned query filters on `req.user.company`.
 4. **Explicit middleware pipeline.** Auth → RBAC → validation → async handler → centralised error handler.
-5. **Importable app.** `server/src/app.js` exports a factory; only `server.js` connects to MongoDB and listens.
+5. **Importable app.** `server/src/createApp.js` exports a factory; only `localServer.js` connects to MongoDB and listens.
 
 ---
 
@@ -34,7 +34,7 @@ Browser
   │                       previewData.js → sample data (temporary preview)
   │
   ▼ HTTP / JSON + Authorization: Bearer <JWT>
-Express 4 API (server/src/app.js)
+Express 4 API (server/src/createApp.js)
   │
   ├── helmet + cors + express.json + morgan(dev)
   ├── /api/health
@@ -141,10 +141,10 @@ Components must not redefine money formatting or hardcode role strings.
 
 ### 4.1 Entry point vs app factory
 
-| File                   | Responsibility                                                                                                                          |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `server/src/app.js`    | `createApp()` configures middleware and routes and returns the Express app. No DB connection, no `listen()`. Safe to import from tests. |
-| `server/src/server.js` | Calls `connectDB()`, then `createApp().listen(config.port)`. Sets `process.exitCode = 1` on failure.                                    |
+| File                        | Responsibility                                                                                                                          |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `server/src/createApp.js`   | `createApp()` configures middleware and routes and returns the Express app. No DB connection, no `listen()`. Safe to import from tests. |
+| `server/src/localServer.js` | Calls `connectDB()`, then `createApp().listen(config.port)`. Sets `process.exitCode = 1` on failure.                                    |
 
 This split prevents a database connection on every import and keeps startup behaviour in one place.
 
@@ -311,5 +311,5 @@ Drafts are preserved under `deferred/`. Do not import from them until a unit is 
 - Fixed invoice deletion so line items are only removed after company ownership is confirmed.
 - Wrapped all async controllers with `asyncHandler`.
 - Replaced `CORS: * + credentials` with an explicit `CLIENT_URL`.
-- Split `app.js` (factory) from `server.js` (entry point).
+- Split `createApp.js` (factory) from `localServer.js` (entry point).
 - Added ESLint 9, Prettier, EditorConfig, CI and this documentation set.

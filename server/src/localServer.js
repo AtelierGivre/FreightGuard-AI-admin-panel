@@ -1,4 +1,4 @@
-const createApp = require('./app');
+const createApp = require('./createApp');
 const config = require('./config/env');
 const connectDB = require('./config/database');
 

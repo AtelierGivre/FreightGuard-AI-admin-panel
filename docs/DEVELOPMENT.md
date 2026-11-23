@@ -112,7 +112,7 @@ Configuration and safety behaviour:
 | ----------------------- | ------------------------------------------------ |
 | `npm install`           | Installs all workspace dependencies              |
 | `npm run dev`           | Runs Express and Next.js together (colour-coded) |
-| `npm run dev -w server` | API only (`nodemon src/server.js`)               |
+| `npm run dev -w server` | API only (`nodemon src/localServer.js`)          |
 | `npm run dev -w client` | Frontend only                                    |
 | `npm run build`         | Production Next.js build                         |
 | `npm start`             | Starts the Express API in production mode        |

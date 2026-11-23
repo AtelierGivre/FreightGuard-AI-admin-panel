@@ -9,7 +9,7 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
  * Build and configure the Express application.
  *
  * Deliberately does NOT connect to MongoDB or start listening here. That is the
- * job of `server.js`, which keeps this module safe to import from tests.
+ * job of `localServer.js`, which keeps this module safe to import from tests.
  *
  * @param {{ beforeRoutes?: import('express').RequestHandler[] }} [options]
  * @returns {import('express').Express}

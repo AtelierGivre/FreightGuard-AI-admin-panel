@@ -122,13 +122,13 @@ Reviewers should verify:
 
 ### Backend
 
-- `server/src/app.js` exports a `createApp()` factory and does **not** connect to MongoDB or listen.
-- `server/src/server.js` is the only entry point that connects to MongoDB and starts HTTP.
+- `server/src/createApp.js` exports a `createApp()` factory and does **not** connect to MongoDB or listen.
+- `server/src/localServer.js` is the local entry point that connects to MongoDB and starts HTTP; `server/src/index.js` is the Vercel serverless entry.
 - Every async controller is wrapped with `asyncHandler` in the route file. Express 4 will not catch rejected promises otherwise.
 - Validation chains live in `server/src/routes/*.js`; call `validate` before the controller.
 - Auth order matters: `protect` → `authorize(...roles)` → validation → `asyncHandler(controller)`.
 - Controllers respond with the envelope `{ success: true, data, ... }` or `{ success: false, message }`.
-- Throw/return errors instead of calling `process.exit()` inside libraries; only `server.js` sets `process.exitCode`.
+- Throw/return errors instead of calling `process.exit()` inside libraries; only `localServer.js` sets `process.exitCode`.
 - All user-owned queries include `company: req.user.company` (see `dashboardController` for the pattern).
 - Add shared business numbers to `server/src/config/constants.js`, not inline in controllers.
 
