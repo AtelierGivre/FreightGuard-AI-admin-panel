@@ -5,161 +5,186 @@ import {
   FileSignature,
   ClipboardCheck,
   ArrowRight,
-  CheckCircle2,
+  ArrowUpRight,
+  ListChecks,
+  BadgeCheck,
+  Gauge,
 } from 'lucide-react';
+
+const steps = [
+  {
+    icon: FileSearch,
+    title: 'Bring in the invoice',
+    desc: 'Add carrier invoice lines, port and container details — or upload a statement for review.',
+  },
+  {
+    icon: ListChecks,
+    title: 'Audit against the tariff',
+    desc: 'Free days, rates and duplicate charges are checked line by line against the signed contract.',
+  },
+  {
+    icon: BadgeCheck,
+    title: 'Recover with a paper trail',
+    desc: 'Low-confidence flags go to an operator first. Confirmed findings become a defensible dispute.',
+  },
+];
 
 const features = [
   {
     icon: FileSearch,
-    title: 'Invoice audit',
-    desc: 'Rules engine checks free days, rates and duplicates against your contract and flags wrong charges.',
+    title: 'Line-by-line verdicts',
+    desc: 'Every charge is marked OK, overcharged or invalid — with the rule and reasoning attached.',
   },
   {
     icon: FileSignature,
-    title: 'Tariff contracts',
-    desc: 'Store carrier rates, free days and calendar rules once. Every invoice is checked against them.',
+    title: 'One source of truth',
+    desc: 'Tariff contracts hold rates, free days and calendar rules so no invoice is judged by guesswork.',
   },
   {
     icon: ClipboardCheck,
-    title: 'Operator review',
-    desc: 'Low-confidence flags are routed to a human reviewer before anything goes out to a carrier.',
+    title: 'Human review gate',
+    desc: 'Nothing goes out to a carrier until an operator confirms the finding and its confidence.',
   },
+];
+
+const stats = [
+  { label: 'Invoices in demo', value: '05' },
+  { label: 'Flagged amount', value: '$1,840' },
+  { label: 'Recovered', value: '$2,845' },
+  { label: 'Recovery rate', value: '58%' },
 ];
 
 export default function Landing() {
   return (
     <div className="landing">
-      <nav>
-        <div className="brand">
-          <div className="logo">
-            <ShieldCheck size={19} aria-hidden="true" />
-          </div>
-          FreightGuard AI
-        </div>
-        <div className="landing-nav-links">
-          <Link href="/login">Product tour</Link>
-          <Link href="/login">Docs</Link>
-          <Link href="/login" className="btn btn-outline btn-sm">
-            Sign in <ArrowRight size={14} />
+      <nav className="landing-nav">
+        <div className="nav-inner">
+          <Link href="/" className="brand">
+            <div className="logo">
+              <ShieldCheck size={19} aria-hidden="true" />
+            </div>
+            <span>
+              FreightGuard AI
+              <small>Recovery desk</small>
+            </span>
           </Link>
+          <div className="landing-nav-links">
+            <span className="live-chip">
+              <span className="dot" /> Live demo
+            </span>
+            <Link href="#how">How it works</Link>
+            <Link href="#features">Features</Link>
+            <Link
+              href="https://github.com/AtelierGivre/FreightGuard-AI-admin-panel"
+              className="source-link"
+            >
+              Source <ArrowUpRight size={13} />
+            </Link>
+            <Link href="/login" className="btn btn-outline btn-sm">
+              Open app <ArrowRight size={14} />
+            </Link>
+          </div>
         </div>
       </nav>
 
-      <header className="hero">
-        <div className="hero-copy">
-          <div className="badge">
-            <span className="dot" /> Container demurrage &amp; detention recovery
-          </div>
+      <main className="landing-main">
+        <header className="hero">
+          <span className="eyebrow">Container demurrage &amp; detention recovery</span>
           <h1>
             Find the charges that <span>don&apos;t add up.</span>
           </h1>
           <p>
-            Upload an invoice. We audit every line against your tariff contract and flag what is
-            wrong. Low-confidence findings go to an operator for review. No recovery, no fee.
+            FreightGuard audits every invoice line against your tariff contract, flags what is
+            wrong, and routes low-confidence findings to a human reviewer. No recovery, no fee.
           </p>
           <div className="cta">
-            <Link href="/register" className="btn btn-primary">
-              Start free audit <ArrowRight size={16} />
+            <Link href="/login" className="btn btn-primary">
+              Enter demo workspace <ArrowRight size={16} />
             </Link>
-            <Link href="/login" className="btn btn-outline">
-              Explore the demo
+            <Link href="#how" className="btn btn-outline">
+              See how it works
             </Link>
           </div>
-          <div className="hero-proof">
-            <span>
-              <strong>Line-by-line</strong> audit trail
-            </span>
-            <span className="sep" />
-            <span>
-              <strong>Human</strong> review gate
-            </span>
-            <span className="sep" />
-            <span>
-              <strong>25%</strong> fee on recovery only
-            </span>
+          <div className="hero-meta">
+            <span>Rules engine</span>
+            <span>Operator review</span>
+            <span>Auditable disputes</span>
           </div>
-        </div>
+        </header>
 
-        <div className="hero-visual" aria-hidden="true">
-          <div className="preview-card">
-            <div className="preview-top">
-              <i />
-              <i />
-              <i />
-              <span>FreightGuard / Recovery dashboard</span>
-            </div>
-            <div className="preview-body">
-              <div className="preview-kpis">
-                <div className="preview-kpi">
-                  <small>Flagged</small>
-                  <strong>$1,840</strong>
-                </div>
-                <div className="preview-kpi">
-                  <small>Recovered</small>
-                  <strong>$2,845</strong>
-                </div>
-                <div className="preview-kpi">
-                  <small>Recovery rate</small>
-                  <strong>58%</strong>
-                </div>
-              </div>
-              <div className="preview-lines">
-                <div className="preview-line">
-                  <span className="name">
-                    Demurrage days 1–10
-                    <small>TransMarine Lines · TRM-2026-04412</small>
-                  </span>
-                  <span className="pill amber">Overcharged</span>
-                </div>
-                <div className="preview-line">
-                  <span className="name">
-                    Detention days 1–7
-                    <small>Maersk · MSK-2026-11890</small>
-                  </span>
-                  <span className="pill blue">In review</span>
-                </div>
-                <div className="preview-line">
-                  <span className="name">
-                    Duplicate demurrage
-                    <small>Hapag-Lloyd · HPL-2026-09331</small>
-                  </span>
-                  <span className="pill green">Confirmed</span>
-                </div>
-              </div>
-              <div className="preview-bars">
-                <i style={{ height: '34%' }} />
-                <i style={{ height: '55%' }} />
-                <i style={{ height: '42%' }} />
-                <i style={{ height: '72%' }} />
-                <i style={{ height: '58%' }} />
-                <i style={{ height: '90%' }} />
-                <i style={{ height: '68%' }} />
-              </div>
-            </div>
+        <section id="how" className="landing-section">
+          <div className="section-head">
+            <span className="mono-label">How it works</span>
+            <h2>From invoice to recovery in three steps.</h2>
+            <p>Built for the boring, high-stakes work of proving a carrier got the number wrong.</p>
           </div>
-        </div>
-      </header>
+          <div className="steps-grid">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <article className="step-card" key={step.title}>
+                  <span className="step-number">{String(index + 1).padStart(2, '0')}</span>
+                  <div className="step-icon">
+                    <Icon size={20} aria-hidden="true" />
+                  </div>
+                  <h3>{step.title}</h3>
+                  <p>{step.desc}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
 
-      <section className="features">
-        {features.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <div className="feature" key={feature.title}>
-              <div className="icon">
-                <Icon size={20} aria-hidden="true" />
-              </div>
-              <h3>{feature.title}</h3>
-              <p>{feature.desc}</p>
+        <section id="features" className="landing-section">
+          <div className="section-head">
+            <span className="mono-label">Built for the dispute</span>
+            <h2>Every flag has a reason.</h2>
+            <p>
+              No black-box scores. Each finding carries the rule, the billed amount and the fix.
+            </p>
+          </div>
+          <div className="features">
+            {features.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <div className="feature" key={feature.title}>
+                  <div className="icon">
+                    <Icon size={20} aria-hidden="true" />
+                  </div>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="proof-band">
+          {stats.map((stat) => (
+            <div className="proof-stat" key={stat.label}>
+              <span className="mono-label">{stat.label}</span>
+              <strong>{stat.value}</strong>
             </div>
-          );
-        })}
-      </section>
+          ))}
+        </section>
+
+        <section className="cta-band">
+          <div>
+            <span className="mono-label">Ready when you are</span>
+            <h2>Open the workspace.</h2>
+            <p>Explore the full admin panel with realistic sample data. No setup required.</p>
+          </div>
+          <Link href="/login" className="btn btn-primary">
+            Enter demo <ArrowRight size={16} />
+          </Link>
+        </section>
+      </main>
 
       <footer className="landing-foot">
         <span>© {new Date().getFullYear()} FreightGuard AI · Demurrage recovery workspace</span>
         <span>
-          <CheckCircle2 size={12} style={{ verticalAlign: '-2px', marginRight: 5 }} />
-          No recovery, no fee
+          <Gauge size={12} style={{ verticalAlign: '-2px', marginRight: 5 }} />
+          Demo data · no backend attached
         </span>
       </footer>
     </div>
