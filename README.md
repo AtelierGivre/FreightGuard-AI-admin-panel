@@ -19,6 +19,7 @@ Share these links with stakeholders:
 | Admin overview | <https://freightguard-ai-admin-panel.vercel.app/admin>        |
 | API health     | <https://freightguard-api.vercel.app/api/health>              |
 | Business deck  | <https://freightguard-deck.vercel.app>                        |
+| Deck PDF       | <https://freightguard-deck.vercel.app/freightguard-deck.pdf>  |
 | Source code    | <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel> |
 
 ### Live data
