@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ShieldCheck } from 'lucide-react';
+import AuthShell from '@/components/AuthShell';
 import { useAuth } from '@/context/AuthContext';
 
 export default function Register() {
@@ -28,68 +28,68 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="brand">
-          <div className="logo">
-            <ShieldCheck size={21} />
-          </div>
-          <strong>FreightGuard AI</strong>
+    <AuthShell>
+      <h2>Create your account</h2>
+      <p className="sub">Start auditing invoices in under five minutes.</p>
+      {error && <div className="alert error mb-16">{error}</div>}
+      <form onSubmit={submit}>
+        <div className="field">
+          <label htmlFor="register-name">Full name</label>
+          <input
+            id="register-name"
+            className="form-control"
+            autoComplete="name"
+            required
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="Priya Nair"
+          />
         </div>
-        <h2>Create your account</h2>
-        <p className="sub">Start auditing invoices in under 5 minutes.</p>
-        {error && <div className="alert error mb-16">{error}</div>}
-        <form onSubmit={submit}>
-          <div className="field">
-            <label>Full name</label>
-            <input
-              className="form-control"
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Priya Nair"
-            />
-          </div>
-          <div className="field">
-            <label>Company name</label>
-            <input
-              className="form-control"
-              value={form.companyName}
-              onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-              placeholder="Harborline Imports"
-            />
-          </div>
-          <div className="field">
-            <label>Email address</label>
-            <input
-              className="form-control"
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="you@company.com"
-            />
-          </div>
-          <div className="field">
-            <label>Password</label>
-            <input
-              className="form-control"
-              type="password"
-              required
-              minLength={8}
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="At least 8 characters"
-            />
-          </div>
-          <button className="btn btn-primary" disabled={busy}>
-            {busy ? 'Creating…' : 'Create account'}
-          </button>
-        </form>
-        <div className="auth-switch">
-          Already have an account? <Link href="/login">Sign in</Link>
+        <div className="field">
+          <label htmlFor="register-company">Company name</label>
+          <input
+            id="register-company"
+            className="form-control"
+            autoComplete="organization"
+            value={form.companyName}
+            onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+            placeholder="Harborline Imports"
+          />
         </div>
+        <div className="field">
+          <label htmlFor="register-email">Email address</label>
+          <input
+            id="register-email"
+            className="form-control"
+            type="email"
+            autoComplete="email"
+            required
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="you@company.com"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="register-password">Password</label>
+          <input
+            id="register-password"
+            className="form-control"
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            placeholder="At least 8 characters"
+          />
+        </div>
+        <button className="btn btn-primary" disabled={busy}>
+          {busy ? 'Creating…' : 'Create account'}
+        </button>
+      </form>
+      <div className="auth-switch">
+        Already have an account? <Link href="/login">Sign in</Link>
       </div>
-    </div>
+    </AuthShell>
   );
 }

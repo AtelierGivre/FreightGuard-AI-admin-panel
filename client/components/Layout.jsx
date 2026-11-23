@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 import { STAFF_ROLES } from '@/lib/constants';
 import { initials } from '@/lib/format';
 
@@ -146,6 +147,11 @@ export default function Layout({ title, subtitle, children }) {
             </div>
           </div>
           <div className="topbar-user">
+            {api.isDemo && (
+              <span className="demo-badge">
+                <span className="dot" /> Demo data
+              </span>
+            )}
             <span className={`pill ${STAFF_ROLES.includes(user?.role) ? 'purple' : 'slate'}`}>
               {user?.role || 'user'}
             </span>

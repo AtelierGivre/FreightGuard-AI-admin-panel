@@ -64,6 +64,7 @@ export default function AdminSettings() {
               },
             ]}
             rows={settings?.companies || []}
+            loading={loading}
           />
         </div>
 

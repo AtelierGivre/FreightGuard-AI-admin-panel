@@ -180,6 +180,7 @@ export default function Invoices() {
               },
             ]}
             rows={invoices || []}
+            loading={loading}
           />
         </div>
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ShieldCheck } from 'lucide-react';
+import AuthShell from '@/components/AuthShell';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 
@@ -41,59 +41,53 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="brand">
-          <div className="logo">
-            <ShieldCheck size={21} />
-          </div>
-          <strong>FreightGuard AI</strong>
+    <AuthShell>
+      <h2>Welcome back</h2>
+      <p className="sub">Sign in to your recovery workspace.</p>
+      {error && <div className="alert error mb-16">{error}</div>}
+      <form onSubmit={submit}>
+        <div className="field">
+          <label htmlFor="login-email">Email address</label>
+          <input
+            id="login-email"
+            className="form-control"
+            type="email"
+            autoComplete="email"
+            required
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="you@company.com"
+          />
         </div>
-        <h2>Welcome back</h2>
-        <p className="sub">Sign in to your recovery workspace.</p>
-        {error && <div className="alert error mb-16">{error}</div>}
-        <form onSubmit={submit}>
-          <div className="field">
-            <label>Email address</label>
-            <input
-              className="form-control"
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="you@company.com"
-            />
-          </div>
-          <div className="field">
-            <label>Password</label>
-            <input
-              className="form-control"
-              type="password"
-              required
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="••••••••"
-            />
-          </div>
-          <button className="btn btn-primary" disabled={busy}>
-            {busy ? 'Signing in…' : 'Sign in'}
+        <div className="field">
+          <label htmlFor="login-password">Password</label>
+          <input
+            id="login-password"
+            className="form-control"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            placeholder="••••••••"
+          />
+        </div>
+        <button className="btn btn-primary" disabled={busy}>
+          {busy ? 'Signing in…' : 'Sign in'}
+        </button>
+      </form>
+      {api.isDemo && (
+        <div className="demo-hint">
+          <strong>Demo workspace.</strong> No backend is connected, so you can explore the full
+          product with sample data — including the admin panel.
+          <button className="btn btn-outline btn-sm" onClick={demoLogin} disabled={busy}>
+            Enter demo as Admin
           </button>
-        </form>
-        {api.isDemo && (
-          <div className="demo-hint">
-            <strong>Demo mode</strong> — no backend configured. Use the button below to explore the
-            full app including the admin panel.
-            <br />
-            <br />
-            <button className="btn btn-outline btn-sm" onClick={demoLogin} disabled={busy}>
-              Enter demo as Admin
-            </button>
-          </div>
-        )}
-        <div className="auth-switch">
-          New here? <Link href="/register">Create an account</Link>
         </div>
+      )}
+      <div className="auth-switch">
+        New here? <Link href="/register">Create an account</Link>
       </div>
-    </div>
+    </AuthShell>
   );
 }

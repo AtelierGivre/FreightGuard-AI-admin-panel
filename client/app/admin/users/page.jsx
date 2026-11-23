@@ -88,6 +88,7 @@ export default function UserManagement() {
               },
             ]}
             rows={users || []}
+            loading={loading}
           />
         </div>
       </Layout>

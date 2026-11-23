@@ -48,12 +48,14 @@ export default function AdminOverview() {
             icon={Users}
             color="indigo"
             foot={`${s.users?.operators ?? 0} operators · ${s.users?.admins ?? 0} admins`}
+            loading={loading}
           />
           <KpiCard
             label="Companies"
             value={loading ? '—' : s.companies}
             icon={Building2}
             color="blue"
+            loading={loading}
           />
           <KpiCard
             label="Invoices"
@@ -61,6 +63,7 @@ export default function AdminOverview() {
             icon={FileText}
             color="indigo"
             foot={`${s.invoices?.audited ?? 0} audited · ${s.invoices?.pending ?? 0} pending`}
+            loading={loading}
           />
           <KpiCard
             label="Flags raised"
@@ -68,6 +71,7 @@ export default function AdminOverview() {
             icon={AlertTriangle}
             color="amber"
             foot={`${money(s.flags?.flaggedAmount)} flagged`}
+            loading={loading}
           />
           <KpiCard
             label="Disputes"
@@ -75,6 +79,7 @@ export default function AdminOverview() {
             icon={Scale}
             color="purple"
             foot={`${s.disputes?.active ?? 0} active · ${s.disputes?.won ?? 0} won`}
+            loading={loading}
           />
           <KpiCard
             label="Recovered"
@@ -82,6 +87,7 @@ export default function AdminOverview() {
             icon={BadgeIndianRupee}
             color="green"
             foot={`${money(s.recoveries?.fees)} in fees`}
+            loading={loading}
           />
         </div>
 
@@ -140,6 +146,7 @@ export default function AdminOverview() {
             ]}
             rows={queue.slice(0, 8)}
             empty="No flags are awaiting review."
+            loading={loading}
           />
         </div>
       </Layout>

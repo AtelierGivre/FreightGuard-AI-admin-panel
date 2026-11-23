@@ -61,6 +61,7 @@ export default function AdminDisputes() {
               },
             ]}
             rows={disputes || []}
+            loading={loading}
           />
         </div>
       </Layout>

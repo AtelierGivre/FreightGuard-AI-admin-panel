@@ -139,6 +139,7 @@ export default function Contracts() {
               },
             ]}
             rows={contracts || []}
+            loading={loading}
           />
         </div>
       </Layout>

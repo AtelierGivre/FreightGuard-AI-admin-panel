@@ -66,6 +66,7 @@ export default function AdminInvoices() {
               },
             ]}
             rows={invoices || []}
+            loading={loading}
           />
         </div>
       </Layout>

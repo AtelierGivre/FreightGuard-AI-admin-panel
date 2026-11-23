@@ -22,7 +22,10 @@ export default function Protected({ children, roles }) {
   if (loading)
     return (
       <div className="auth-page">
-        <div className="text-muted">Loading…</div>
+        <div className="loading-screen">
+          <span className="spinner" aria-hidden="true" />
+          Loading your workspace…
+        </div>
       </div>
     );
   if (!user) return null;
