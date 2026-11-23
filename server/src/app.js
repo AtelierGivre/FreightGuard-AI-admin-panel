@@ -11,9 +11,10 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
  * Deliberately does NOT connect to MongoDB or start listening here. That is the
  * job of `server.js`, which keeps this module safe to import from tests.
  *
+ * @param {{ beforeRoutes?: import('express').RequestHandler[] }} [options]
  * @returns {import('express').Express}
  */
-const createApp = () => {
+const createApp = ({ beforeRoutes = [] } = {}) => {
   const app = express();
 
   // --- Security and request parsing -----------------------------------------
@@ -22,6 +23,10 @@ const createApp = () => {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
   if (!config.isProduction) app.use(morgan('dev'));
+
+  // Optional middleware (for example DB readiness in serverless) must run
+  // before the routers are registered.
+  beforeRoutes.forEach((middleware) => app.use(middleware));
 
   // --- Routes ---------------------------------------------------------------
   app.get('/api/health', (req, res) => {
