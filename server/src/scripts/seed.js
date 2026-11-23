@@ -27,7 +27,7 @@ const seed = async () => {
   ]);
 
   // Admin + operator accounts
-  await User.create({
+  const admin = await User.create({
     name: 'Platform Admin',
     email: config.admin.email,
     password: config.admin.password,
@@ -60,6 +60,12 @@ const seed = async () => {
   });
   priya.company = company._id;
   await priya.save();
+
+  // Staff accounts also belong to the seeded company so their company-scoped
+  // workspace views (dashboard, invoices, contracts) show the starter records.
+  admin.company = company._id;
+  operator.company = company._id;
+  await Promise.all([admin.save(), operator.save()]);
 
   // Contracts
   const contract1 = await Contract.create({

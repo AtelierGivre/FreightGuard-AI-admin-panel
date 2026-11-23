@@ -17,19 +17,14 @@ Share these links with stakeholders:
 | App            | <https://freightguard-ai-admin-panel.vercel.app>              |
 | Sign in        | <https://freightguard-ai-admin-panel.vercel.app/login>        |
 | Admin overview | <https://freightguard-ai-admin-panel.vercel.app/admin>        |
+| API health     | <https://freightguard-api.vercel.app/api/health>              |
 | Source code    | <https://github.com/AtelierGivre/FreightGuard-AI-admin-panel> |
 
-### Temporary preview
+### Live data
 
-The current deployment runs in **temporary preview mode** (`NEXT_PUBLIC_PREVIEW_MODE=true`) because the backend is not connected yet: the frontend uses sample data from `client/lib/previewData.js`, offers an **Enter preview as Admin** button, and needs no backend or MongoDB. This is a temporary bridge, not the final product.
+The production deployment is connected to the Express API and MongoDB Atlas. The frontend runs with `NEXT_PUBLIC_PREVIEW_MODE=false` and `NEXT_PUBLIC_API_URL=https://freightguard-api.vercel.app/api`; sign-in uses real JWT authentication and every screen reads live records. There is no silent fallback to sample data — API failures surface as errors.
 
-To switch to real mode:
-
-1. Set `NEXT_PUBLIC_PREVIEW_MODE=false` and `NEXT_PUBLIC_API_URL` to the Express API base URL.
-2. Redeploy.
-3. Delete the preview data module (`client/lib/previewData.js`) and the preview UI branches.
-
-Preview mode never calls the API; in real mode there is no silent fallback — API failures still surface as errors.
+The preview code path in `client/lib/previewData.js` remains only as an explicitly opt-in development aid (`NEXT_PUBLIC_PREVIEW_MODE=true`) and is disabled in production.
 
 ---
 
@@ -68,8 +63,9 @@ freightguard-ai/
 │       ├── routes/             API route definitions + validation chains
 │       ├── scripts/            Seed script
 │       ├── utils/              Audit rules engine + rounding helper
-│       ├── app.js              Express app factory (safe to import in tests)
-│       └── server.js           Entry point: connect DB, then listen
+│       ├── createApp.js        Express app factory (safe to import in tests)
+│       ├── index.js            Vercel serverless entry (DB readiness middleware)
+│       └── localServer.js      Local entry point: connect DB, then listen
 ├── docs/                       Plan and teammate documentation
 │   ├── PROJECT_PLAN.md         100% plan / 45% scope
 │   ├── ARCHITECTURE.md         How the pieces fit together
@@ -99,17 +95,17 @@ npm run dev           # Express :5000, Next.js :3000
 
 Open <http://localhost:3000>.
 
-In real mode, `NEXT_PUBLIC_API_URL` is required for the frontend. When it is missing, the app shows a configuration error instead of any data; temporary preview mode (described under **Live app**) is the explicit exception.
+`NEXT_PUBLIC_API_URL` is required for the frontend. When it is missing, the app shows a configuration error instead of any data. The opt-in preview flag described under **Live data** is the only exception and is off in production.
 
 ---
 
 ## Seed accounts (after seeding)
 
-| Role     | Email                      | Password         |
-| -------- | -------------------------- | ---------------- |
-| Admin    | `admin@freightguard.ai`    | `Admin@12345`    |
-| Operator | `operator@freightguard.ai` | `Operator@12345` |
-| User     | `priya@harborline.com`     | `Demo@12345`     |
+| Role     | Email                      | Password           |
+| -------- | -------------------------- | ------------------ |
+| Admin    | `admin@freightguard.ai`    | `l4JIlu-Bfojs94GQ` |
+| Operator | `operator@freightguard.ai` | `Operator@12345`   |
+| User     | `priya@harborline.com`     | `Demo@12345`       |
 
 ---
 
