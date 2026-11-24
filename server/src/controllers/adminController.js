@@ -4,6 +4,7 @@ const Invoice = require('../models/Invoice');
 const InvoiceLine = require('../models/InvoiceLine');
 const Dispute = require('../models/Dispute');
 const Recovery = require('../models/Recovery');
+const AuditJob = require('../models/AuditJob');
 const config = require('../config/env');
 const { ROLES, STAFF_ROLES } = require('../config/constants');
 const { round2 } = require('../utils/round');
@@ -154,6 +155,34 @@ const deleteUser = async (req, res) => {
   return res.json({ success: true, message: 'User deleted' });
 };
 
+/** Delete a tenant and its workspace data (admin only). */
+const deleteCompany = async (req, res) => {
+  if (String(req.user.company) === req.params.id) {
+    return res.status(400).json({ success: false, message: 'You cannot delete your own company' });
+  }
+
+  const company = await Company.findById(req.params.id);
+  if (!company) return res.status(404).json({ success: false, message: 'Company not found' });
+
+  const invoices = await Invoice.find({ company: company._id }).select('_id');
+  const invoiceIds = invoices.map((invoice) => invoice._id);
+
+  await Promise.all([
+    User.deleteMany({ company: company._id }),
+    Contract.deleteMany({ company: company._id }),
+    Dispute.deleteMany({ company: company._id }),
+    Recovery.deleteMany({ company: company._id }),
+  ]);
+  await Promise.all([
+    InvoiceLine.deleteMany({ invoice: { $in: invoiceIds } }),
+    AuditJob.deleteMany({ invoice: { $in: invoiceIds } }),
+    Invoice.deleteMany({ company: company._id }),
+  ]);
+  await Company.findByIdAndDelete(company._id);
+
+  return res.json({ success: true, message: 'Company and workspace data deleted' });
+};
+
 /** Platform-wide invoice oversight. */
 const allInvoices = async (req, res) => {
   const invoices = await Invoice.find()
@@ -197,6 +226,7 @@ module.exports = {
   listUsers,
   updateUser,
   deleteUser,
+  deleteCompany,
   allInvoices,
   allDisputes,
   getSettings,

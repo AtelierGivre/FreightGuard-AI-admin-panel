@@ -52,6 +52,13 @@ router.delete(
   validate,
   asyncHandler(controller.deleteUser),
 );
+router.delete(
+  '/companies/:id',
+  authorize('admin'),
+  idRule,
+  validate,
+  asyncHandler(controller.deleteCompany),
+);
 router.get('/invoices', asyncHandler(controller.allInvoices));
 router.get('/disputes', asyncHandler(controller.allDisputes));
 router.get('/settings', asyncHandler(controller.getSettings));

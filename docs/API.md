@@ -512,6 +512,10 @@ Sets `reviewStatus`, `reviewedBy = req.user._id` and `reviewedAt = now`, then ap
 
 `200` `{ success, message: "User deleted" }`. `400` when deleting yourself; `404` if the user does not exist.
 
+### `DELETE /api/admin/companies/:id` — admin only
+
+Deletes an orphan/test tenant and all of its workspace data: users, contracts, invoices, audit lines, audit jobs, disputes and recoveries. `200` `{ success, message: "Company and workspace data deleted" }`. `400` when deleting your own company; `404` if the company does not exist.
+
 ### `GET /api/admin/invoices`
 
 All invoices across companies, with `company` and `contract` populated. `{ success, count, data }`.

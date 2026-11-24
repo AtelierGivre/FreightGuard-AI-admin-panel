@@ -223,7 +223,7 @@ const [invoices, disputes, recoveries] = await Promise.all([
 ]);
 ```
 
-The same boundary applies to flag decisions and the recovery loop: `reviewFlag` checks the invoice and line before saving, while `disputeController` and `recoveryController` filter every query by company. Admin "all invoices" / "all disputes" routes are the intentional exception: they are platform-wide and guarded by `STAFF_ROLES`.
+The same boundary applies to flag decisions and the recovery loop: `reviewFlag` checks the invoice and line before saving, while `disputeController` and `recoveryController` filter every query by company. Admin "all invoices" / "all disputes" routes are the intentional exception: they are platform-wide and guarded by `STAFF_ROLES`. Tenant deletion is a second exception, admin-only: `DELETE /api/admin/companies/:id` cascades across every collection and refuses to delete the caller's own company.
 
 ### 4.7 Audit rules engine
 

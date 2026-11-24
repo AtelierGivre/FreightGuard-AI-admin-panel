@@ -113,6 +113,7 @@ GET  /api/dashboard
 GET  /api/admin/stats        GET  /api/admin/review-queue
 PUT  /api/admin/review/:id   GET  /api/admin/users
 PUT  /api/admin/users/:id    DELETE /api/admin/users/:id
+DELETE /api/admin/companies/:id                     (admin only)
 GET  /api/admin/invoices     GET  /api/admin/disputes   GET  /api/admin/settings
 ```
 
