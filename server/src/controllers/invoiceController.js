@@ -3,6 +3,7 @@ const InvoiceLine = require('../models/InvoiceLine');
 const Contract = require('../models/Contract');
 const { auditInvoice } = require('../utils/rulesEngine');
 const { isFlagged } = require('../utils/domain');
+const { buildAuditLineWrite } = require('../utils/auditPersistence');
 
 const list = async (req, res) => {
   const invoices = await Invoice.find({ company: req.user.company })
@@ -76,20 +77,14 @@ const runAudit = async (req, res) => {
 
   const saved = await Promise.all(
     results.map((result, i) => {
-      const line = lines[i];
-      return InvoiceLine.findOneAndUpdate(
-        { _id: line._id || line.id },
-        {
-          invoice: invoice._id,
-          feeType: line.feeType || 'demurrage',
-          description: line.description,
-          days: line.days || 0,
-          rate: line.rate || 0,
-          billedAmount: line.billedAmount || 0,
-          ...result,
-        },
-        { new: true, upsert: true, runValidators: true },
-      );
+      const write = buildAuditLineWrite(lines[i], result, invoice._id);
+      if (write.operation === 'create') return InvoiceLine.create(write.payload);
+      return InvoiceLine.findOneAndUpdate(write.filter, write.payload, {
+        new: true,
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      });
     }),
   );
 

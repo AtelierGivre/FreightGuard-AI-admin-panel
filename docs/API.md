@@ -236,7 +236,7 @@ Deletes the invoice **after** confirming company ownership, then removes its lin
 
 ### `POST /api/invoices/:id/audit`
 
-Runs the rules engine on existing lines, or on `rawJson.lines` when no lines exist yet. Saves/upserts the results and sets `auditStatus = 'audited'`.
+Runs the rules engine on existing lines, or on `rawJson.lines` when no lines exist yet. Persisted lines are updated only within their own invoice; `rawJson` items become new line records. Sets `auditStatus = 'audited'`.
 
 **200 response**
 
