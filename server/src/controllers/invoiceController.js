@@ -2,6 +2,7 @@ const Invoice = require('../models/Invoice');
 const InvoiceLine = require('../models/InvoiceLine');
 const Contract = require('../models/Contract');
 const { auditInvoice } = require('../utils/rulesEngine');
+const { isFlagged } = require('../utils/domain');
 
 const list = async (req, res) => {
   const invoices = await Invoice.find({ company: req.user.company })
@@ -98,4 +99,25 @@ const runAudit = async (req, res) => {
   res.json({ success: true, data: saved });
 };
 
-module.exports = { list, get, create, update, remove, runAudit };
+/** Customer accept/reject decision on one flagged audit line. */
+const reviewFlag = async (req, res) => {
+  const { decision, reviewNote } = req.body;
+  const invoice = await Invoice.findOne({ _id: req.params.id, company: req.user.company });
+  if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
+
+  const line = await InvoiceLine.findOne({ _id: req.params.lineId, invoice: invoice._id });
+  if (!line) return res.status(404).json({ success: false, message: 'Audit line not found' });
+  if (!isFlagged(line)) {
+    return res.status(400).json({ success: false, message: 'Only flagged lines can be reviewed' });
+  }
+
+  line.reviewStatus = decision === 'accept' ? 'confirmed' : 'rejected';
+  line.reviewedBy = req.user._id;
+  line.reviewedAt = new Date();
+  if (reviewNote !== undefined) line.reviewNote = reviewNote;
+  await line.save();
+
+  return res.json({ success: true, data: line });
+};
+
+module.exports = { list, get, create, update, remove, runAudit, reviewFlag };

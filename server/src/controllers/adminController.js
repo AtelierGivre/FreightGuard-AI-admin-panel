@@ -7,8 +7,7 @@ const Recovery = require('../models/Recovery');
 const config = require('../config/env');
 const { ROLES, STAFF_ROLES } = require('../config/constants');
 const { round2 } = require('../utils/round');
-
-const isFlagged = (line) => line.verdict !== 'ok' && line.verdict !== 'skipped';
+const { isFlagged } = require('../utils/domain');
 
 /** Platform-wide statistics for the admin overview. */
 const getStats = async (req, res) => {

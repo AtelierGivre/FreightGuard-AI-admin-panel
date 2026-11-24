@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, Plus } from 'lucide-react';
+import { Check, Play, Plus, X } from 'lucide-react';
 import Layout from '@/components/Layout';
 import Protected from '@/components/Protected';
 import StatusPill from '@/components/StatusPill';
@@ -11,6 +11,7 @@ import { money, confidencePct } from '@/lib/format';
 import { useApiData } from '@/hooks/useApiData';
 
 const emptyForm = { invoiceNumber: '', carrierName: '', port: '', totalBilled: '' };
+const isFlaggedLine = (line) => !['ok', 'skipped'].includes(line.verdict);
 
 export default function Invoices() {
   const { data: invoices, loading, error, reload } = useApiData(api.getInvoices);
@@ -19,6 +20,7 @@ export default function Invoices() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
+  const [busyLine, setBusyLine] = useState('');
 
   const openInvoice = async (invoice) => {
     setSelected(invoice);
@@ -41,6 +43,24 @@ export default function Invoices() {
       await reload();
     } catch (err) {
       setFormError(err.message);
+    }
+  };
+
+  const decideFlag = async (line, decision) => {
+    if (!selected) return;
+    setBusyLine(line._id);
+    setFormError('');
+    try {
+      const result = await api.reviewFlag(selected._id, line._id, { decision });
+      const updated = result.data || {
+        ...line,
+        reviewStatus: decision === 'accept' ? 'confirmed' : 'rejected',
+      };
+      setLines((current) => current.map((item) => (item._id === line._id ? updated : item)));
+    } catch (err) {
+      setFormError(err.message);
+    } finally {
+      setBusyLine('');
     }
   };
 
@@ -192,6 +212,9 @@ export default function Invoices() {
                 Close
               </button>
             </div>
+            <div className="text-sm text-muted mb-12">
+              Accepted flags are the only lines included in a dispute letter.
+            </div>
             <DataTable
               columns={[
                 { header: 'Line', key: 'description' },
@@ -212,6 +235,38 @@ export default function Invoices() {
                   header: 'Verdict',
                   key: 'verdict',
                   render: (row) => <StatusPill value={row.verdict} />,
+                },
+                {
+                  header: 'Decision',
+                  key: 'reviewStatus',
+                  render: (row) => <StatusPill value={row.reviewStatus || 'unreviewed'} />,
+                },
+                {
+                  header: 'Accept / reject',
+                  key: 'decision',
+                  render: (row) =>
+                    isFlaggedLine(row) ? (
+                      <div className="flex gap-8">
+                        <button
+                          className="btn btn-outline btn-sm"
+                          disabled={busyLine === row._id}
+                          onClick={() => decideFlag(row, 'accept')}
+                          title="Accept this flag for the dispute letter"
+                        >
+                          <Check size={12} /> Accept
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          disabled={busyLine === row._id}
+                          onClick={() => decideFlag(row, 'reject')}
+                          title="Exclude this flag from the dispute letter"
+                        >
+                          <X size={12} /> Reject
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted">Not a flag</span>
+                    ),
                 },
                 {
                   header: 'Confidence',

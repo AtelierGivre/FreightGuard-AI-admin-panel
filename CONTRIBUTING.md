@@ -1,6 +1,6 @@
 # Contributing to FreightGuard AI
 
-This repository is a shared workspace. The current product scope is **45% (units 1–9)** of the [full 100% plan](docs/PROJECT_PLAN.md). Work on deferred units must stay in `deferred/` until its unit is formally promoted into scope.
+This repository is a shared workspace. The current product scope is **65% (units 1–9 and 11–14)** of the [full 100% plan](docs/PROJECT_PLAN.md). Work on unfinished units must stay in `deferred/` until its unit is formally promoted into scope.
 
 > **Ground rule:** discuss any major architecture change (new package, new data model, changing auth/RBAC strategy, switching frameworks, changing the fee model) in an issue or team discussion before opening a PR. Small refactors that preserve behaviour are welcome.
 
@@ -73,7 +73,7 @@ chore: add ESLint and Prettier configuration
 3. Run all checks locally:
 
    ```bash
-   npm run check            # lint + format:check + build
+   npm run check            # lint + format:check + test + build
    npm audit --audit-level=high
    ```
 
@@ -86,7 +86,7 @@ chore: add ESLint and Prettier configuration
 
 Reviewers should verify:
 
-- [ ] The change matches the 45% scope, or is explicitly labelled as deferred groundwork.
+- [ ] The change matches the 65% scope, or is explicitly labelled as unfinished-unit groundwork.
 - [ ] No secrets, tokens, real customer data or `.env` files are committed.
 - [ ] New routes have validation, RBAC (`protect` / `authorize`) and `asyncHandler`.
 - [ ] Queries touching user data are filtered by `req.user.company`.
@@ -200,7 +200,7 @@ Write for a teammate who has never seen the code: explain _why_, not only _what_
 
 ## 9. Deferred work
 
-`deferred/` contains drafts for units 10–20. Do not import from `deferred/` in production code. When a unit is promoted into scope:
+`deferred/` contains only sample data for opt-in preview mode. The promoted drafts for units 11–14 were deleted after they moved into production code. Remaining product units are 10 and 15–20. Do not import from `deferred/` in production code except through the explicit preview aid. When a unit is promoted into scope:
 
 1. Discuss the move with the team.
 2. Move the files into `client/` or `server/` with proper tests/docs.

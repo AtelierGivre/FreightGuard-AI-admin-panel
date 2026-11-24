@@ -1,7 +1,7 @@
 # FreightGuard AI — Project Plan
 
-**Full vision: 100%. Current build: 45% (9 of 20 units).**
-Last updated: 2026-11-22
+**Full vision: 100%. Current build: 65% (13 of 20 units).**
+Last updated: 2026-11-24
 
 ---
 
@@ -44,10 +44,10 @@ Structure: `client/` (Next.js) and `server/` (Express) as npm workspaces, with s
 | 8   | Dashboard: KPI cards and traceable data tables                            | Both   | ✅ **In scope** |
 | 9   | Admin panel: platform stats, review queue, user management, settings      | Both   | ✅ **In scope** |
 | 10  | Real AI OCR: Kimi vision → structured JSON extraction                     | Server | ⏳ Deferred     |
-| 11  | User-side flag accept / reject workflow                                   | Both   | ⏳ Deferred     |
-| 12  | Dispute letter generation + text/PDF export                               | Both   | ⏳ Deferred     |
-| 13  | Dispute status tracking (Draft → Sent → Under review → Won/Lost)          | Both   | ⏳ Deferred     |
-| 14  | Recovery recording + automated 25% fee billing                            | Both   | ⏳ Deferred     |
+| 11  | User-side flag accept / reject workflow                                   | Both   | ✅ **In scope** |
+| 12  | Dispute letter generation + text/PDF export                               | Both   | ✅ **In scope** |
+| 13  | Dispute status tracking (Draft → Sent → Under review → Won/Lost)          | Both   | ✅ **In scope** |
+| 14  | Recovery recording + automated 25% fee billing                            | Both   | ✅ **In scope** |
 | 15  | Charts, weekly analytics and CSV export                                   | Both   | ⏳ Deferred     |
 | 16  | Email notifications (audit done, status change, weekly summary)           | Server | ⏳ Deferred     |
 | 17  | Payment gateway integration for collecting the fee                        | Server | ⏳ Deferred     |
@@ -55,42 +55,45 @@ Structure: `client/` (Next.js) and `server/` (Express) as npm workspaces, with s
 | 19  | Real file storage (S3-compatible bucket) + hash de-duplication            | Server | ⏳ Deferred     |
 | 20  | Final polish, automated tests, docs, CI/CD and deployment                 | All    | 🟡 Partial      |
 
-**In scope = units 1–9 = 9 × 5% = 45%.**
-**Deferred = units 10–20 = 11 × 5% = 55%.**
+**In scope = units 1–9 and 11–14 = 13 × 5% = 65%.**
+**Unfinished = units 10 and 15–20 = 7 × 5% = 35%.**
 
-> Unit 20 is marked **partial** because teammate documentation, lint/format configuration and a CI workflow were added during the cleanup pass. Automated tests and deployment remain deferred, so the product scope is still 45%.
+> Unit 20 is marked **partial** because documentation, lint/format configuration, CI, automated domain tests and live deployment are in place. Final polish and the remaining automation work are not part of the 65% product scope.
 
 ---
 
-## 4. What the 45% build delivers
+## 4. What the 65% build delivers
 
-A working, end-to-end slice that still uses all three mandated technologies:
+A working, end-to-end vertical slice using all three mandated technologies:
 
-- **Next.js frontend** with landing, login, registration, dashboard, invoices, contracts and the full admin panel (6 screens).
-- **Express REST API** with health check, auth, contracts, invoices, dashboard and admin routes.
+- **Next.js frontend** with landing, login, registration, dashboard, invoices, contracts, disputes, recoveries and the full admin panel (8 screens).
+- **Express REST API** with health check, auth, contracts, invoices, flag decisions, disputes, recoveries, dashboard and admin routes.
 - **MongoDB** with all 8 collections and the indexes the PRD requires.
-- **Role-based access**: `user` → workspace; `operator` → workspace + review queue + oversight; `admin` → everything including user management.
-- **Live API client**: every `api.*` call goes over HTTP to `NEXT_PUBLIC_API_URL`; a missing URL shows a configuration error instead of data.
+- **Role-based access**: `user` → workspace; `operator` → workspace + review queue + oversight; `admin` → everything including fee billing and user management.
 - **Audit rules engine**: basic verdicts (ok / overcharged / invalid / skipped) with reasons and confidence scores.
-- **Teammate-ready tooling**: shared constants/formatters, ESLint 9 + Prettier + EditorConfig, GitHub Actions CI, PR template, and detailed docs (`ARCHITECTURE.md`, `API.md`, `DEVELOPMENT.md`, `GLOSSARY.md`, `CONTRIBUTING.md`).
+- **Recovery loop**: accept/reject flagged lines, generate a dispute letter from accepted flags only, export TXT/PDF, move a dispute through its bounded state machine, record recovered cash and bill the contingency fee.
+- **Fee correctness**: `feeAmount = amount × feePct / 100`; `feePct` is an integer percent (`25 = 25%`). Fees are charged only on recovered cash, and paid fees no longer count as due.
+- **Company scoping**: every user-owned query filters on `req.user.company`; staff-only routes are guarded by `STAFF_ROLES`.
+- **Live API client**: every `api.*` call goes over HTTP to `NEXT_PUBLIC_API_URL`; a missing URL shows a configuration error instead of data.
+- **Teammate-ready tooling**: shared constants/formatters, ESLint 9 + Prettier + EditorConfig, GitHub Actions CI, PR template, Node test runner and detailed docs.
 
-### Deliberately not in the 45% build
+### Deliberately not in the 65% build
 
-Dispute letter generation, dispute status workflow, recovery/fee billing screens, charts, notifications, payments, OAuth, real OCR, real file storage, exports, automated tests and deployment. Their files, where already drafted, are preserved under `deferred/` for a later phase.
+Real Kimi OCR, charts/CSV, email notifications, payment collection, Google OAuth, real file storage and final product polish. No production code imports from `deferred/`; the only remaining deferred file is sample data for the opt-in preview aid.
 
 ---
 
-## 5. Data model (100% — all collections created in the 45% build)
+## 5. Data model (100% — all collections existed from the 45% build)
 
 `users` · `companies` · `contracts` · `invoices` · `invoice_lines` · `disputes` · `recoveries` · `audit_jobs`
 
-Every user-owned table is scoped by `company`, and every model has `createdAt` / `updatedAt`.
+Every user-owned table is scoped by `company`, and every model has `createdAt` / `updatedAt`. The 65% build added `currency` and `lines` to disputes, `billingStatus` / `billedAt` to recoveries, and refined `reviewStatus` to carry customer accept/reject decisions as well as operator review.
 
 ---
 
 ## 6. API surface
 
-### Implemented (45%)
+### Implemented (65%)
 
 ```
 GET  /api/health
@@ -98,27 +101,34 @@ POST /api/auth/register      POST /api/auth/login       GET /api/auth/me
 GET  /api/contracts          POST /api/contracts        GET/PUT/DELETE /api/contracts/:id
 GET  /api/invoices           POST /api/invoices         GET/PUT/DELETE /api/invoices/:id
 POST /api/invoices/:id/audit
+PUT  /api/invoices/:id/lines/:lineId/decision
+
+GET  /api/disputes           POST /api/disputes         GET /api/disputes/:id
+POST /api/disputes/letters   PUT /api/disputes/:id/status
+POST /api/disputes/:id/recovery
+GET  /api/recoveries         PUT /api/recoveries/:id/billing   (staff only)
+
 GET  /api/dashboard
 
 GET  /api/admin/stats        GET  /api/admin/review-queue
 PUT  /api/admin/review/:id   GET  /api/admin/users
 PUT  /api/admin/users/:id    DELETE /api/admin/users/:id
-GET  /api/admin/invoices     GET  /api/admin/disputes   GET /api/admin/settings
+GET  /api/admin/invoices     GET  /api/admin/disputes   GET  /api/admin/settings
 ```
 
-### Deferred (55%)
+### Unfinished (35%)
 
-Dispute letter/recovery endpoints, file upload, export, notification and payment endpoints.
+OCR/upload endpoints, charts/CSV exports, notification endpoints, payment endpoints, OAuth providers, real file storage and remaining final-polish work.
 
 ---
 
 ## 7. Roadmap to 100%
 
-| Phase             | Units     | Theme                                                                            |
-| ----------------- | --------- | -------------------------------------------------------------------------------- |
-| **A — now (45%)** | 1–9       | Foundation, data, auth, contracts, invoices, basic audit, dashboard, admin panel |
-| B (next 25%)      | 10–13, 15 | Real OCR, flag workflow, dispute letters, recovery tracking, charts              |
-| C (final 30%)     | 14, 16–20 | Payments, notifications, OAuth, storage, exports, tests, deployment              |
+| Phase                   | Units     | Theme                                                                            |
+| ----------------------- | --------- | -------------------------------------------------------------------------------- |
+| **A — complete (45%)**  | 1–9       | Foundation, data, auth, contracts, invoices, basic audit, dashboard, admin panel |
+| **B — now (65%)**       | 11–14     | Flag decisions, dispute letters, status tracking, recovery + fee billing         |
+| **C — remaining (35%)** | 10, 15–20 | Real OCR, charts/CSV, notifications, payments, OAuth, storage, final polish      |
 
 ---
 
@@ -131,13 +141,13 @@ npm run seed                  # creates admin, operator, starter company
 npm run dev                   # Express on :5000, Next.js on :3000
 
 # Quality gate (same commands as CI)
-npm run check                 # lint + format:check + build
+npm run check                 # lint + format:check + test + build
 npm audit --audit-level=high
 ```
 
 Seed accounts after seeding:
 
-- Admin: `admin@freightguard.ai` / `Admin@12345`
+- Admin: `admin@freightguard.ai` / `l4JIlu-Bfojs94GQ`
 - Operator: `operator@freightguard.ai` / `Operator@12345`
 - User: `priya@harborline.com` / `Demo@12345`
 

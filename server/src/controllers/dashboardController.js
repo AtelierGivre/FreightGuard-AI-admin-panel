@@ -3,6 +3,7 @@ const Dispute = require('../models/Dispute');
 const Recovery = require('../models/Recovery');
 const InvoiceLine = require('../models/InvoiceLine');
 const { round2 } = require('../utils/round');
+const { isFlagged } = require('../utils/domain');
 
 /**
  * Company-scoped dashboard data. Every query is filtered by `req.user.company`
@@ -13,7 +14,7 @@ const getDashboard = async (req, res) => {
 
   const [invoices, disputes, recoveries] = await Promise.all([
     Invoice.find({ company: companyId }),
-    Dispute.find({ company: companyId }),
+    Dispute.find({ company: companyId }).populate('invoice', 'invoiceNumber'),
     Recovery.find({ company: companyId }),
   ]);
 
@@ -26,11 +27,15 @@ const getDashboard = async (req, res) => {
   );
   const flaggedAmount = round2(
     lines
-      .filter((line) => line.verdict !== 'ok' && line.verdict !== 'skipped')
+      .filter(isFlagged)
       .reduce((sum, line) => sum + ((line.billedAmount || 0) - (line.correctAmount || 0)), 0),
   );
   const recoveredAmount = round2(recoveries.reduce((sum, item) => sum + (item.amount || 0), 0));
-  const feeDue = round2(recoveries.reduce((sum, item) => sum + (item.feeAmount || 0), 0));
+  const feeDue = round2(
+    recoveries
+      .filter((item) => item.billingStatus !== 'paid')
+      .reduce((sum, item) => sum + (item.feeAmount || 0), 0),
+  );
 
   res.json({
     success: true,
@@ -56,7 +61,7 @@ const getDashboard = async (req, res) => {
       })),
       disputes: disputes.slice(0, 8).map((dispute) => ({
         id: dispute._id,
-        invoiceNumber: dispute.invoiceNumber,
+        invoiceNumber: dispute.invoice?.invoiceNumber || '',
         status: dispute.status,
         disputedAmount: dispute.disputedAmount,
         createdAt: dispute.createdAt,

@@ -8,8 +8,17 @@ const recoverySchema = new mongoose.Schema(
     feeAmount: { type: Number, required: true },
     feePct: { type: Number, default: 25 },
     recoveredAt: { type: Date, default: Date.now },
+    billingStatus: {
+      type: String,
+      enum: ['due', 'paid'],
+      default: 'due',
+    },
+    billedAt: { type: Date },
   },
   { timestamps: true },
 );
+
+recoverySchema.index({ company: 1, recoveredAt: -1 });
+recoverySchema.index({ dispute: 1 });
 
 module.exports = mongoose.model('Recovery', recoverySchema);

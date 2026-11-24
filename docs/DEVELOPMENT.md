@@ -115,11 +115,12 @@ Configuration and safety behaviour:
 | `npm run build`         | Production Next.js build                         |
 | `npm start`             | Starts the Express API in production mode        |
 | `npm run seed`          | Reseeds MongoDB with starter records             |
+| `npm run test`          | Node test runner for server domain rules         |
 | `npm run lint`          | ESLint across `client/` and `server/`            |
 | `npm run lint:fix`      | ESLint with safe auto-fixes                      |
 | `npm run format`        | Prettier write across the repo                   |
 | `npm run format:check`  | Prettier check (CI gate)                         |
-| `npm run check`         | `lint` + `format:check` + `build`                |
+| `npm run check`         | `lint` + `format:check` + `test` + `build`       |
 
 Run the full gate before opening a PR:
 
@@ -152,6 +153,14 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md#6-adding-a-new-feature) for the full ch
 3. Load data with `useApiData(api.<method>)`; render `error` with a Retry button.
 4. Add the sidebar link in `client/components/Layout.jsx` (`workspaceNav` or `staffNav`).
 5. Use `money()` / `confidencePct()` from `client/lib/format.js` and roles from `client/lib/constants.js`.
+
+### Work on the recovery loop
+
+1. Flag eligibility, fee math and status transitions live in `server/src/utils/domain.js`; letter text lives in `server/src/utils/letterGenerator.js`.
+2. Client exports live in `client/lib/letterExport.js`; the letter text saved by the API is the text exported by the browser.
+3. Run `npm run test` after changing any domain rule. Add a test for the new case.
+4. Keep `feePct` as an integer percent (`25 = 25%`) and calculate `amount * feePct / 100`.
+5. `won` is only reachable by recording a recovery; do not allow arbitrary status changes into it.
 
 ### Change a business number
 
@@ -188,8 +197,9 @@ Never hardcode `25` or `0.7` in a component or controller.
 3. `npm ci` (clean install from lockfile).
 4. `npm run lint`
 5. `npm run format:check`
-6. `npm run build`
-7. `npm audit --audit-level=high`
+6. `npm run test`
+7. `npm run build`
+8. `npm audit --audit-level=high`
 
 No database is needed because the build is static generation and `app.js` does not connect to MongoDB on import.
 
@@ -197,7 +207,7 @@ No database is needed because the build is static generation and `app.js` does n
 
 ## 9. Working with deferred code
 
-`deferred/` holds drafts for units 10–20. Rules:
+`deferred/` holds only opt-in preview sample data. The promoted drafts for units 11–14 were deleted after promotion. Remaining product work is units 10 and 15–20. Rules:
 
 - Do not import from `deferred/` in production code.
 - Do not delete a draft just because it looks outdated; discuss promotion into scope first.

@@ -4,10 +4,10 @@
 
 ## Related issue / scope
 
-<!-- Link the issue (Closes #123). State whether this is in-scope 45% work or deferred groundwork. -->
+<!-- Link the issue (Closes #123). State whether this is in-scope 65% work or unfinished-unit groundwork. -->
 
-- [ ] In-scope 45% unit (1–9)
-- [ ] Deferred unit groundwork (10–20)
+- [ ] In-scope 65% unit (1–9, 11–14)
+- [ ] Unfinished unit groundwork (10, 15–20)
 - [ ] Documentation / tooling only
 
 ## Changes
@@ -22,7 +22,7 @@
 
 <!-- Paste the commands you ran. CI must be green before merge. -->
 
-- [ ] `npm run check` (lint + format:check + build)
+- [ ] `npm run check` (lint + format:check + test + build)
 - [ ] `npm audit --audit-level=high`
 - [ ] Manual check in live mode (if API/DB behaviour changed)
 

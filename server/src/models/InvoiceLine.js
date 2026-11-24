@@ -20,7 +20,7 @@ const invoiceLineSchema = new mongoose.Schema(
     correctAmount: { type: Number },
     reason: { type: String },
     confidence: { type: Number, min: 0, max: 1 },
-    // Admin/operator review fields
+    // Customer accept/reject and operator review share one decision field.
     reviewStatus: {
       type: String,
       enum: ['unreviewed', 'confirmed', 'rejected'],

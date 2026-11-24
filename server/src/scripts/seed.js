@@ -12,6 +12,7 @@ const Invoice = require('../models/Invoice');
 const InvoiceLine = require('../models/InvoiceLine');
 const Dispute = require('../models/Dispute');
 const Recovery = require('../models/Recovery');
+const { calculateFee } = require('../utils/domain');
 
 const seed = async () => {
   await mongoose.connect(config.mongoUri);
@@ -311,8 +312,9 @@ const seed = async () => {
     company: company._id,
     amount: recoveredAmount,
     feePct: config.defaultFeePct,
-    feeAmount: Math.round(recoveredAmount * config.defaultFeePct + Number.EPSILON) / 100,
+    feeAmount: calculateFee(recoveredAmount, config.defaultFeePct),
     recoveredAt: new Date('2026-10-20'),
+    billingStatus: 'due',
   });
 
   console.log('Seed complete.');

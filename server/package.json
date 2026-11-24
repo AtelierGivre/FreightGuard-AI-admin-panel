@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "nodemon src/localServer.js",
     "start": "node src/localServer.js",
-    "seed": "node src/scripts/seed.js"
+    "seed": "node src/scripts/seed.js",
+    "test": "node --test src/tests"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

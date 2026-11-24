@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   X,
+  CircleDollarSign,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -27,6 +28,8 @@ const workspaceNav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/invoices', label: 'Invoices', icon: FileText },
   { href: '/contracts', label: 'Contracts', icon: FileSignature },
+  { href: '/disputes', label: 'Disputes', icon: Scale },
+  { href: '/recoveries', label: 'Recoveries', icon: CircleDollarSign },
 ];
 
 /** Admin links shown only to operators and admins. */

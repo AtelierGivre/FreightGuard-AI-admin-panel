@@ -1,6 +1,6 @@
 # Architecture — FreightGuard AI
 
-This document explains how the 45% build is put together and where new work belongs. It is written for a teammate who has just cloned the repository.
+This document explains how the 65% build is put together and where new work belongs. It is written for a teammate who has just cloned the repository.
 
 For the product roadmap, see [PROJECT_PLAN.md](PROJECT_PLAN.md). For endpoint details, see [API.md](API.md). For day-to-day rules, see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
@@ -30,7 +30,7 @@ Browser
   │     ├── components/   Layout, Protected, DataTable, KpiCard, StatusPill
   │     ├── context/      AuthProvider (JWT in localStorage, current user)
   │     ├── hooks/        useApiData (loading/error/reload)
-  │     └── lib/          api.js → HTTP (production)
+  │     └── lib/          api.js → HTTP (production), letterExport.js, formatters
   │                       previewData.js → sample data (opt-in dev aid only)
   │
   ▼ HTTP / JSON + Authorization: Bearer <JWT>
@@ -39,7 +39,8 @@ Express 4 API (server/src/createApp.js)
   ├── helmet + cors + express.json + morgan(dev)
   ├── /api/health
   ├── /api/auth    /api/contracts   /api/invoices
-  ├── /api/dashboard                /api/admin
+  ├── /api/disputes              /api/recoveries
+  ├── /api/dashboard             /api/admin
   ├── notFound → errorHandler
   │
   ▼ Mongoose
@@ -73,6 +74,8 @@ Preview mode is an explicit opt-in used only while developing UI without a backe
 | `/login`, `/register`                | `app/login/page.jsx`, `app/register/page.jsx`     | public           |
 | `/dashboard`                         | `app/dashboard/page.jsx`                          | signed-in user   |
 | `/invoices`, `/contracts`            | `app/invoices/page.jsx`, `app/contracts/page.jsx` | signed-in user   |
+| `/disputes`                          | `app/disputes/page.jsx`                           | signed-in user   |
+| `/recoveries`                        | `app/recoveries/page.jsx`                         | signed-in user   |
 | `/admin`                             | `app/admin/page.jsx`                              | operator + admin |
 | `/admin/review`                      | `app/admin/review/page.jsx`                       | operator + admin |
 | `/admin/users`                       | `app/admin/users/page.jsx`                        | admin only       |
@@ -128,10 +131,11 @@ Adding a page without adding its method here is a review blocker (see [CONTRIBUT
 
 ### 3.6 Constants and formatters
 
-| File                      | Purpose                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------ |
-| `client/lib/constants.js` | `DEFAULT_FEE_PCT = 25`, `REVIEW_CONFIDENCE_THRESHOLD = 0.7`, `ROLES`, `STAFF_ROLES`, `TOKEN_KEY` |
-| `client/lib/format.js`    | `money()`, `confidencePct()`, `initials()`, `formatDate()`                                       |
+| File                         | Purpose                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| `client/lib/constants.js`    | `DEFAULT_FEE_PCT = 25`, `REVIEW_CONFIDENCE_THRESHOLD = 0.7`, `ROLES`, `STAFF_ROLES`, `TOKEN_KEY` |
+| `client/lib/format.js`       | `money()`, `confidencePct()`, `initials()`, `formatDate()`                                       |
+| `client/lib/letterExport.js` | TXT download and dependency-free PDF export for dispute letters                                  |
 
 Components must not redefine money formatting or hardcode role strings.
 
@@ -186,7 +190,7 @@ Order in `createApp()`:
 - **Routes** (`server/src/routes/`) define paths, validation chains and guard order. Example admin user update: `protect` → `authorize('admin')` → id/body rules → `validate` → `asyncHandler(controller.updateUser)`.
 - **Controllers** (`server/src/controllers/`) implement request handling and response envelopes. They do not parse `process.env` or duplicate business constants.
 - **Models** (`server/src/models/`) define the eight Mongoose collections and timestamps. All user-owned collections include `company`.
-- **Utils** (`server/src/utils/`) contain the audit rules engine and `round2()` helper.
+- **Utils** (`server/src/utils/`) contain the audit rules engine, `domain.js` (flag eligibility, fee math, dispute transitions), `letterGenerator.js`, and the `round2()` helper. `server/src/tests/` covers the domain rules with Node's built-in test runner.
 
 ### 4.5 Authentication and RBAC
 
@@ -198,11 +202,11 @@ Order in `createApp()`:
 
 Role capabilities:
 
-| Role       | Workspace | Admin read | Review queue | User management |
-| ---------- | --------- | ---------- | ------------ | --------------- |
-| `user`     | ✅        | ❌         | ❌           | ❌              |
-| `operator` | ✅        | ✅         | ✅           | ❌              |
-| `admin`    | ✅        | ✅         | ✅           | ✅              |
+| Role       | Workspace | Flag decisions | Admin read | Review queue | Fee billing | User management |
+| ---------- | --------- | -------------- | ---------- | ------------ | ----------- | --------------- |
+| `user`     | ✅        | ✅             | ❌         | ❌           | ❌          | ❌              |
+| `operator` | ✅        | ✅             | ✅         | ✅           | ✅          | ❌              |
+| `admin`    | ✅        | ✅             | ✅         | ✅           | ✅          | ✅              |
 
 `adminController.updateUser` and `deleteUser` block an admin from demoting, deactivating or deleting their own account.
 
@@ -219,7 +223,7 @@ const [invoices, disputes, recoveries] = await Promise.all([
 ]);
 ```
 
-Admin "all invoices" / "all disputes" routes are the intentional exception: they are platform-wide and guarded by `STAFF_ROLES`.
+The same boundary applies to flag decisions and the recovery loop: `reviewFlag` checks the invoice and line before saving, while `disputeController` and `recoveryController` filter every query by company. Admin "all invoices" / "all disputes" routes are the intentional exception: they are platform-wide and guarded by `STAFF_ROLES`.
 
 ### 4.7 Audit rules engine
 
@@ -238,6 +242,17 @@ Every result includes `reason` and `confidence` (0–1). Lines at or below `REVI
 
 `round2()` lives in `server/src/utils/round.js` and uses `Number.EPSILON` to avoid floating-point artefacts.
 
+### 4.8 Recovery loop rules
+
+`server/src/utils/domain.js` owns the business rules promoted in unit 11–14:
+
+- `isFlagged(line)` excludes `ok` and `skipped` lines from disputes.
+- `isAcceptedFlag(line)` requires `reviewStatus: 'confirmed'` (customer or operator acceptance).
+- `DISPUTE_TRANSITIONS` is the only allowed status path: `draft → sent → under_review → won/lost`. `won` is reached by recording a recovery, which also creates the fee record.
+- `calculateFee(amount, feePct)` returns `round2(amount * feePct / 100)`. `feePct = 25` means 25%, not a 25× multiplier.
+
+`server/src/utils/letterGenerator.js` renders the plain-text letter from accepted flags only; the browser exports that same text as TXT or PDF via `client/lib/letterExport.js`.
+
 ---
 
 ## 5. Example request lifecycle
@@ -249,6 +264,14 @@ Every result includes `reason` and `confidence` (0–1). Lines at or below `REVI
 3. `adminRoutes` runs `protect` → `authorize('operator', 'admin')` → id/body validation → `validate` → `asyncHandler(reviewLine)`.
 4. `reviewLine` loads the `InvoiceLine`, sets `reviewStatus`, `reviewedBy`, `reviewedAt`, optional note/correctAmount/verdict, saves, and returns `{ success: true, data: line }`.
 5. The page calls `reload()` from `useApiData`, which refetches `/api/admin/review-queue`.
+
+**Customer accepts a flag, then recovers money:**
+
+1. `Invoices` page calls `api.reviewFlag(invoiceId, lineId, { decision: 'accept' })`.
+2. `disputes` page calls `api.generateDisputeLetter({ invoiceId })`; the controller selects confirmed flags, persists the letter to a draft dispute, and returns `letterText` for TXT/PDF export.
+3. Status changes go through `api.updateDisputeStatus(id, { status })` and are rejected if they skip a state or try to mark `won` without cash.
+4. `api.recordRecovery(id, { amount, recoveredAt })` creates a company-scoped `Recovery`, calculates the fee with `calculateFee()`, and sets the dispute to `won`.
+5. Staff can call `api.updateRecoveryBilling(id, { billingStatus: 'paid' })`; the dashboard fee-due KPI excludes paid fees.
 
 **Dashboard KPI:**
 
@@ -265,8 +288,8 @@ Every result includes `reason` and `confidence` (0–1). Lines at or below `REVI
 | `contracts`     | Carrier + port + free days + day rule + tiers                        |
 | `invoices`      | Company-owned invoice header with billed total and audit status      |
 | `invoice_lines` | Charge lines with verdict, correct amount, confidence, review fields |
-| `disputes`      | Dispute lifecycle records (workflow UI deferred)                     |
-| `recoveries`    | Recovered amount, fee percentage and fee amount                      |
+| `disputes`      | Dispute lifecycle records, letter text and accepted invoice lines    |
+| `recoveries`    | Recovered amount, fee percentage, fee amount and billing status      |
 | `audit_jobs`    | Job metadata for audit runs                                          |
 
 All models include `createdAt` / `updatedAt`. See [PROJECT_PLAN.md](PROJECT_PLAN.md) section 5 for the authoritative schema list.
@@ -281,24 +304,23 @@ All models include `createdAt` / `updatedAt`. See [PROJECT_PLAN.md](PROJECT_PLAN
 - Centralised errors never leak stack traces.
 - Frontend requires `NEXT_PUBLIC_API_URL` in real mode; a missing URL shows a configuration error and API failures surface to the UI. The opt-in preview mode is disabled in production.
 - Admin self-lockout guards.
-- No `dangerouslySetInnerHTML` and no untrusted HTML rendering in the 45% build.
+- No `dangerouslySetInnerHTML` and no untrusted HTML rendering in the 65% build. Dispute letters are plain text; PDF bytes are generated locally in the browser.
 
 ---
 
-## 8. Where deferred units plug in
+## 8. Where unfinished units plug in
 
-| Future unit               | Natural location                                                 |
-| ------------------------- | ---------------------------------------------------------------- |
-| Kimi OCR extraction       | `server/src/services/ocr/` + invoice upload route                |
-| User flag accept/reject   | Extend `adminController.reviewLine` pattern to user-facing route |
-| Dispute letter generation | `server/src/services/letters/` + PDF export                      |
-| Dispute workflow screens  | New `client/app/disputes/` pages                                 |
-| Recovery/fee billing      | `Recovery` model already exists; add routes/pages                |
-| Charts / CSV export       | `client/components/` + admin routes                              |
-| Email / payments / OAuth  | New Express services and auth providers                          |
-| Tests / deployment        | Root scripts + CI in `.github/workflows/`                        |
+| Future unit                 | Natural location                                           |
+| --------------------------- | ---------------------------------------------------------- |
+| Kimi OCR extraction         | `server/src/services/ocr/` + invoice upload route          |
+| Charts / CSV export         | `client/components/` + admin routes                        |
+| Email notifications         | New Express service + dispute/invoice event hooks          |
+| Payment collection          | New Express service + `Recovery.billingStatus` integration |
+| Google OAuth / email verify | New Express auth providers under `/api/auth`               |
+| Real file storage / hashes  | `server/src/services/storage/` + invoice metadata          |
+| Final polish                | UI QA, accessibility pass, expanded integration tests      |
 
-Drafts are preserved under `deferred/`. Do not import from them until a unit is promoted into scope.
+The promoted units 11–14 now live in `client/app/`, `server/src/controllers/` and `server/src/utils/`. The stale drafts were removed from `deferred/`; only opt-in preview sample data remains there.
 
 ---
 
@@ -313,3 +335,6 @@ Drafts are preserved under `deferred/`. Do not import from them until a unit is 
 - Replaced `CORS: * + credentials` with an explicit `CLIENT_URL`.
 - Split `createApp.js` (factory) from `localServer.js` (entry point).
 - Added ESLint 9, Prettier, EditorConfig, CI and this documentation set.
+- Promoted units 11–14: flag accept/reject, dispute letters, status tracking, recovery recording and fee billing.
+- Added `domain.js` and `letterGenerator.js` on the server, `letterExport.js` on the client, and Node tests for fee math, transitions, flag eligibility and letter content.
+- Fixed fee math to `amount * feePct / 100` and excluded paid fees from dashboard `feeDue`.

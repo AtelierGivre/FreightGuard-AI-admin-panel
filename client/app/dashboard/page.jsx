@@ -225,6 +225,12 @@ export default function Dashboard() {
             <button className="btn btn-outline" onClick={() => router.push('/contracts')}>
               Add a contract
             </button>
+            <button className="btn btn-outline" onClick={() => router.push('/disputes')}>
+              Manage disputes
+            </button>
+            <button className="btn btn-outline" onClick={() => router.push('/recoveries')}>
+              View recoveries
+            </button>
             <button className="btn btn-outline" onClick={() => router.push('/admin')}>
               Open admin panel
             </button>

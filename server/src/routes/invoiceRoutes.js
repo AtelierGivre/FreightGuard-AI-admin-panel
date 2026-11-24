@@ -8,6 +8,14 @@ const { validate, asyncHandler } = require('../middleware/errorHandler');
 router.use(protect);
 
 const idRule = [param('id').isMongoId().withMessage('Invalid invoice ID')];
+const lineIdRule = [param('lineId').isMongoId().withMessage('Invalid audit line ID')];
+
+const reviewFlagRules = [
+  ...idRule,
+  ...lineIdRule,
+  body('decision').isIn(['accept', 'reject']).withMessage('Decision must be accept or reject'),
+  body('reviewNote').optional().isString().trim(),
+];
 
 const createRules = [
   body('invoiceNumber').trim().notEmpty().withMessage('Invoice number is required'),
@@ -30,5 +38,11 @@ router.post('/', createRules, validate, asyncHandler(controller.create));
 router.put('/:id', updateRules, validate, asyncHandler(controller.update));
 router.delete('/:id', idRule, validate, asyncHandler(controller.remove));
 router.post('/:id/audit', idRule, validate, asyncHandler(controller.runAudit));
+router.put(
+  '/:id/lines/:lineId/decision',
+  reviewFlagRules,
+  validate,
+  asyncHandler(controller.reviewFlag),
+);
 
 module.exports = router;

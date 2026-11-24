@@ -1,13 +1,13 @@
-# Deferred work (Phase B / C — the remaining 55%)
+# Deferred work (remaining 35%)
 
-These files were drafted while exploring the full vision but are **not part of the current 45% build**. They are kept here so no work is lost and can be promoted back into `client/app/` and `server/src/` when those units are scheduled.
+The recovery loop has been promoted into the live product: flag accept/reject, dispute letters with TXT/PDF export, dispute status tracking, recovery recording and 25% fee billing are all implemented in `client/app/`, `server/src/` and the deployment.
 
-| File | Future unit |
-|---|---|
-| `client/disputes/page.jsx` | 13 — Dispute status tracking |
-| `client/recoveries/page.jsx` | 14 — Recovery recording + 25% fee billing |
-| `server/disputeController.js` | 13–14 — Dispute & recovery API |
-| `server/disputeRoutes.js` | 13–14 — Dispute & recovery routes |
-| `server/letterGenerator.js` | 12 — Dispute letter generation |
+The stale drafts for units 11–14 have been removed. One file remains:
 
-See `docs/PROJECT_PLAN.md` for the full 100% breakdown.
+| File                        | Purpose                                                                  |
+| --------------------------- | ------------------------------------------------------------------------ |
+| `client/lib/demoData.js`    | Sample data source for the opt-in `NEXT_PUBLIC_PREVIEW_MODE=true` dev aid |
+
+This is not a deferred product unit. It exists only so `client/lib/previewData.js` can re-export sample data for local UI work without maintaining a second sample-data file in `client/lib/`. Production uses the live Express API and MongoDB; preview mode is disabled.
+
+Remaining product units are 10 (real OCR), 15 (charts/analytics/CSV), 16 (email notifications), 17 (payments), 18 (Google OAuth/email verification), 19 (real file storage/hash de-duplication) and the final polish portion of unit 20. See `docs/PROJECT_PLAN.md` for the authoritative breakdown.

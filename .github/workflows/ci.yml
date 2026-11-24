@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   quality:
-    name: Lint, format, build and audit
+    name: Lint, format, test, build and audit
     runs-on: ubuntu-latest
 
     steps:
@@ -33,6 +33,9 @@ jobs:
 
       - name: Check formatting
         run: npm run format:check
+
+      - name: Test domain rules
+        run: npm run test
 
       - name: Build frontend
         run: npm run build

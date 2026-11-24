@@ -36,6 +36,8 @@ const createApp = ({ beforeRoutes = [] } = {}) => {
   app.use('/api/auth', require('./routes/authRoutes'));
   app.use('/api/contracts', require('./routes/contractRoutes'));
   app.use('/api/invoices', require('./routes/invoiceRoutes'));
+  app.use('/api/disputes', require('./routes/disputeRoutes'));
+  app.use('/api/recoveries', require('./routes/recoveryRoutes'));
   app.use('/api/dashboard', require('./routes/dashboardRoutes'));
   app.use('/api/admin', require('./routes/adminRoutes'));
 

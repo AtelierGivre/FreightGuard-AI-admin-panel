@@ -10,6 +10,8 @@ const disputeSchema = new mongoose.Schema(
       default: 'draft',
     },
     disputedAmount: { type: Number, required: true, default: 0 },
+    currency: { type: String, default: 'USD' },
+    lines: [{ type: mongoose.Schema.Types.ObjectId, ref: 'InvoiceLine' }],
     responseDueDate: { type: Date },
     letterText: { type: String },
     sentAt: { type: Date },
