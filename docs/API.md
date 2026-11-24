@@ -399,21 +399,21 @@ Auth required, company-scoped.
   "success": true,
   "data": {
     "kpis": {
-      "auditedInvoices": 4,
+      "auditedInvoices": 3,
       "totalInvoices": 5,
-      "totalBilled": 6425.5,
-      "flaggedAmount": 930,
+      "totalBilled": 4915,
+      "flaggedAmount": 1340,
       "recoveredAmount": 2845,
-      "recoveryRate": 44.28,
+      "recoveryRate": 57.88,
       "feeDue": 711.25,
-      "activeDisputes": 2
+      "activeDisputes": 4
     },
     "invoices": [
       {
         "id": "...",
         "invoiceNumber": "TRM-2026-04412",
-        "carrierName": "Maersk",
-        "totalBilled": 1275,
+        "carrierName": "TransMarine Lines",
+        "totalBilled": 1840,
         "auditStatus": "audited",
         "createdAt": "..."
       }
@@ -423,7 +423,7 @@ Auth required, company-scoped.
 }
 ```
 
-`totalBilled` is rounded to two decimals and intentionally matches the sum shown in the invoice table (this was a cleanup bug fix).
+`totalBilled` is rounded to two decimals and intentionally matches the sum shown in the invoice table (this was a cleanup bug fix). The sample values above reflect the seeded demo workspace.
 
 ---
 
@@ -441,9 +441,9 @@ Platform-wide statistics.
   "data": {
     "users": { "total": 3, "operators": 1, "admins": 1 },
     "companies": 1,
-    "invoices": { "total": 5, "audited": 4, "pending": 1, "totalBilled": 6425.5 },
-    "flags": { "total": 4, "flaggedAmount": 930 },
-    "disputes": { "total": 5, "draft": 1, "active": 2, "won": 1, "lost": 1 },
+    "invoices": { "total": 5, "audited": 3, "pending": 2, "totalBilled": 4915 },
+    "flags": { "total": 4, "flaggedAmount": 1340 },
+    "disputes": { "total": 6, "draft": 2, "active": 2, "won": 1, "lost": 1 },
     "recoveries": { "total": 1, "recoveredAmount": 2845, "fees": 711.25 }
   }
 }
