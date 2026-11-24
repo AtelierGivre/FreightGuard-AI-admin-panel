@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Company = require('../models/Company');
+const Contract = require('../models/Contract');
 const Invoice = require('../models/Invoice');
 const InvoiceLine = require('../models/InvoiceLine');
 const Dispute = require('../models/Dispute');
