@@ -1,22 +1,33 @@
 /**
  * Single API client for the Next.js app.
  *
- * Real mode calls the Express API at NEXT_PUBLIC_API_URL. Preview mode is a
- * TEMPORARY opt-in (NEXT_PUBLIC_PREVIEW_MODE=true) that serves sample data so
- * the UI can be reviewed while the backend is being prepared. Preview mode
- * never calls the API and must be removed when the live API is connected.
+ * Real mode calls the Express API at NEXT_PUBLIC_API_URL. Preview mode is an
+ * opt-in development aid that serves sample data without calling the API.
+ * It is hard blocked in production builds and on non-development origins.
  */
 import * as preview from './previewData';
 import { DEFAULT_FEE_PCT, TOKEN_KEY } from './constants';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
-const PREVIEW_MODE = process.env.NEXT_PUBLIC_PREVIEW_MODE === 'true';
+const isBrowser = typeof window !== 'undefined';
+const PREVIEW_ORIGINS = (
+  process.env.NEXT_PUBLIC_PREVIEW_ALLOWED_ORIGINS || 'localhost:3000,127.0.0.1:3000'
+)
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+// NEXT_PUBLIC_* values are frozen at build time. The extra NODE_ENV and origin
+// checks stop a mis-set flag from exposing fake admin data on a public deploy.
+const PREVIEW_MODE =
+  process.env.NEXT_PUBLIC_PREVIEW_MODE === 'true' &&
+  process.env.NODE_ENV !== 'production' &&
+  (!isBrowser || PREVIEW_ORIGINS.includes(window.location.host));
 
 export const isPreview = PREVIEW_MODE;
 export const isConfigured = Boolean(API_URL);
 export const apiBaseUrl = API_URL || null;
 
-const isBrowser = typeof window !== 'undefined';
 const getToken = () => (isBrowser ? localStorage.getItem(TOKEN_KEY) : null);
 
 const ensureConfigured = () => {
