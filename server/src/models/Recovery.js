@@ -19,6 +19,6 @@ const recoverySchema = new mongoose.Schema(
 );
 
 recoverySchema.index({ company: 1, recoveredAt: -1 });
-recoverySchema.index({ dispute: 1 });
+recoverySchema.index({ dispute: 1 }, { unique: true });
 
 module.exports = mongoose.model('Recovery', recoverySchema);

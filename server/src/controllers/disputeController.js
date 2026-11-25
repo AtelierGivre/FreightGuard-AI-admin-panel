@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Dispute = require('../models/Dispute');
 const Recovery = require('../models/Recovery');
 const Company = require('../models/Company');
@@ -6,12 +7,17 @@ const InvoiceLine = require('../models/InvoiceLine');
 const Contract = require('../models/Contract');
 const config = require('../config/env');
 const { round2 } = require('../utils/round');
-const { assertTransition, calculateFee } = require('../utils/domain');
+const {
+  assertTransition,
+  calculateFee,
+  isAcceptedFlag,
+  RECOVERY_ALLOWED_STATUSES,
+} = require('../utils/domain');
 const { generateDisputeLetter } = require('../utils/letterGenerator');
 
 const INVOICE_FIELDS = 'invoiceNumber carrierName containerNumber port totalBilled currency';
 const LINE_FIELDS =
-  'description feeType billedAmount correctAmount verdict reason confidence reviewStatus';
+  'description feeType billedAmount correctAmount verdict reason confidence customerDecision operatorDecision reviewStatus';
 
 const populateDispute = (query) =>
   query.populate('invoice', INVOICE_FIELDS).populate('lines', LINE_FIELDS).sort({ createdAt: -1 });
@@ -64,13 +70,19 @@ const generateLetter = async (req, res) => {
 
   const filter = {
     invoice: invoice._id,
-    reviewStatus: 'confirmed',
     verdict: { $in: ['overcharged', 'invalid'] },
+    $or: [
+      { customerDecision: 'accept' },
+      { operatorDecision: 'confirmed' },
+      { customerDecision: null, operatorDecision: null, reviewStatus: 'confirmed' },
+    ],
   };
   const requestedIds = Array.isArray(lineIds) ? [...new Set(lineIds.map(String))] : [];
   if (requestedIds.length) filter._id = { $in: requestedIds };
 
-  const flags = await InvoiceLine.find(filter);
+  // Apply the shared decision rules after loading candidates so operator
+  // rejections and low-confidence flags are handled consistently.
+  const flags = (await InvoiceLine.find(filter)).filter(isAcceptedFlag);
   if (!flags.length) {
     return res.status(400).json({
       success: false,
@@ -158,36 +170,74 @@ const updateStatus = async (req, res) => {
   res.json({ success: true, data: dispute });
 };
 
-/** Record cash received and bill the contingency fee in the same operation. */
+/** Record cash received and bill the contingency fee in one transaction. */
 const recordRecovery = async (req, res) => {
   const { amount, recoveredAt } = req.body;
-  const dispute = await Dispute.findOne({ _id: req.params.id, company: req.user.company });
-  if (!dispute) return res.status(404).json({ success: false, message: 'Dispute not found' });
-  if (dispute.status === 'lost') {
-    return res.status(400).json({ success: false, message: 'A lost dispute cannot be recovered' });
+  const session = await mongoose.startSession();
+  let recovery;
+
+  try {
+    await session.withTransaction(async () => {
+      const fail = (statusCode, message) => {
+        const error = new Error(message);
+        error.statusCode = statusCode;
+        throw error;
+      };
+
+      const dispute = await Dispute.findOne({
+        _id: req.params.id,
+        company: req.user.company,
+      }).session(session);
+      if (!dispute) fail(404, 'Dispute not found');
+      if (dispute.status === 'lost') fail(400, 'A lost dispute cannot be recovered');
+
+      // Claim the dispute first. Two concurrent requests cannot both match this
+      // conditional update, so only one recovery can ever win a dispute.
+      const claimed = await Dispute.findOneAndUpdate(
+        {
+          _id: dispute._id,
+          company: req.user.company,
+          status: { $in: RECOVERY_ALLOWED_STATUSES },
+        },
+        { $set: { status: 'won' } },
+        { new: true, session },
+      );
+      if (!claimed) {
+        fail(409, `Cannot record a recovery while dispute is ${dispute.status}`);
+      }
+
+      const company = await Company.findById(req.user.company).session(session);
+      const feePct = Number(company?.feePct ?? config.defaultFeePct);
+      const [created] = await Recovery.create(
+        [
+          {
+            dispute: dispute._id,
+            company: req.user.company,
+            amount,
+            feePct,
+            feeAmount: calculateFee(amount, feePct),
+            recoveredAt: recoveredAt ? new Date(recoveredAt) : new Date(),
+            billingStatus: 'due',
+          },
+        ],
+        { session },
+      );
+      recovery = created;
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'A recovery is already recorded for this dispute',
+      });
+    }
+    throw error;
+  } finally {
+    await session.endSession();
   }
-
-  const existing = await Recovery.findOne({ dispute: dispute._id, company: req.user.company });
-  if (existing) {
-    return res
-      .status(400)
-      .json({ success: false, message: 'A recovery is already recorded for this dispute' });
-  }
-
-  const company = await Company.findById(req.user.company);
-  const feePct = Number(company?.feePct ?? config.defaultFeePct);
-  const recovery = await Recovery.create({
-    dispute: dispute._id,
-    company: req.user.company,
-    amount,
-    feePct,
-    feeAmount: calculateFee(amount, feePct),
-    recoveredAt: recoveredAt ? new Date(recoveredAt) : new Date(),
-    billingStatus: 'due',
-  });
-
-  dispute.status = 'won';
-  await dispute.save();
 
   await recovery.populate({
     path: 'dispute',

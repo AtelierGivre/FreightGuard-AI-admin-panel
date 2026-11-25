@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   DISPUTE_TRANSITIONS,
+  RECOVERY_ALLOWED_STATUSES,
   isFlagged,
   isAcceptedFlag,
   canTransition,
@@ -9,6 +10,15 @@ const {
   calculateFee,
 } = require('../utils/domain');
 const { generateDisputeLetter } = require('../utils/letterGenerator');
+const Recovery = require('../models/Recovery');
+
+test('a recovery can only be recorded from a sent or reviewed dispute', () => {
+  assert.deepEqual(RECOVERY_ALLOWED_STATUSES, ['sent', 'under_review']);
+  assert.deepEqual(Recovery.schema.indexes().find(([fields]) => fields.dispute === 1)[1], {
+    unique: true,
+    background: true,
+  });
+});
 
 test('fee is a percentage of recovered cash', () => {
   assert.equal(calculateFee(2845, 25), 711.25);

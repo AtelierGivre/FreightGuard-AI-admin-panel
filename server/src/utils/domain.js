@@ -3,6 +3,9 @@
 const { round2 } = require('./round');
 const { REVIEW_CONFIDENCE_THRESHOLD } = require('../config/constants');
 
+/** Dispute states from which cash recovery may be recorded. */
+const RECOVERY_ALLOWED_STATUSES = Object.freeze(['sent', 'under_review']);
+
 /** Allowed dispute transitions. Recovery recording is the only path into `won`. */
 const DISPUTE_TRANSITIONS = Object.freeze({
   draft: ['sent'],
@@ -67,6 +70,7 @@ const calculateFee = (amount, feePct) => round2((Number(amount) * Number(feePct)
 
 module.exports = {
   DISPUTE_TRANSITIONS,
+  RECOVERY_ALLOWED_STATUSES,
   isFlagged,
   isAcceptedFlag,
   syncReviewStatus,
