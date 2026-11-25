@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const config = require('../config/env');
 const User = require('../models/User');
 const Company = require('../models/Company');
@@ -13,28 +14,44 @@ const register = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Email already registered' });
   }
 
-  const user = await User.create({ name, email, password });
+  let company;
+  try {
+    // Share one id so the company owner is valid before either write lands.
+    // If user creation fails, remove the company in the catch below.
+    const userId = new mongoose.Types.ObjectId();
+    company = await Company.create({
+      name: companyName || `${name}'s Company`,
+      email,
+      owner: userId,
+    });
 
-  const company = await Company.create({
-    name: companyName || `${name}'s Company`,
-    email,
-    owner: user._id,
-  });
-  user.company = company._id;
-  await user.save();
-
-  const token = signToken(user._id);
-  res.status(201).json({
-    success: true,
-    token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
+    const user = await User.create({
+      _id: userId,
+      name,
+      email,
+      password,
       company: company._id,
-    },
-  });
+    });
+
+    const token = signToken(user._id);
+    return res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        company: company._id,
+      },
+    });
+  } catch (error) {
+    if (company) await Company.deleteOne({ _id: company._id });
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Email already registered' });
+    }
+    throw error;
+  }
 };
 
 const login = async (req, res) => {
