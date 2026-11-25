@@ -77,7 +77,7 @@ export default function Dashboard() {
             loading={loading}
           />
           <KpiCard
-            label={`Fee due (${DEFAULT_FEE_PCT}%)`}
+            label={`Fee due (${k.feePct ?? DEFAULT_FEE_PCT}%)`}
             value={money(k.feeDue)}
             icon={Percent}
             color="purple"

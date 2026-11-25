@@ -1,9 +1,12 @@
+const Company = require('../models/Company');
 const Invoice = require('../models/Invoice');
 const Dispute = require('../models/Dispute');
 const Recovery = require('../models/Recovery');
 const InvoiceLine = require('../models/InvoiceLine');
+const config = require('../config/env');
 const { round2 } = require('../utils/round');
 const { isFlagged } = require('../utils/domain');
+const { weeklyRecoverySeries } = require('../utils/recoverySeries');
 
 /**
  * Company-scoped dashboard data. Every query is filtered by `req.user.company`
@@ -12,7 +15,8 @@ const { isFlagged } = require('../utils/domain');
 const getDashboard = async (req, res) => {
   const companyId = req.user.company;
 
-  const [invoices, disputes, recoveries] = await Promise.all([
+  const [company, invoices, disputes, recoveries] = await Promise.all([
+    Company.findById(companyId).select('feePct'),
     Invoice.find({ company: companyId }),
     Dispute.find({ company: companyId }).populate('invoice', 'invoiceNumber'),
     Recovery.find({ company: companyId }),
@@ -48,6 +52,7 @@ const getDashboard = async (req, res) => {
         recoveredAmount,
         recoveryRate: totalBilled > 0 ? round2((recoveredAmount / totalBilled) * 100) : 0,
         feeDue,
+        feePct: Number(company?.feePct ?? config.defaultFeePct),
         activeDisputes: disputes.filter((dispute) => !['won', 'lost'].includes(dispute.status))
           .length,
       },
@@ -66,6 +71,7 @@ const getDashboard = async (req, res) => {
         disputedAmount: dispute.disputedAmount,
         createdAt: dispute.createdAt,
       })),
+      weekly: weeklyRecoverySeries(recoveries),
     },
   });
 };
