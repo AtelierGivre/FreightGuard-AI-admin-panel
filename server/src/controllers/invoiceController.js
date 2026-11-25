@@ -4,6 +4,7 @@ const Contract = require('../models/Contract');
 const { auditInvoice } = require('../utils/rulesEngine');
 const { isFlagged, syncReviewStatus } = require('../utils/domain');
 const { buildAuditLineWrite } = require('../utils/auditPersistence');
+const { buildInvoiceInput } = require('../utils/invoiceInput');
 
 const list = async (req, res) => {
   const invoices = await Invoice.find({ company: req.user.company })
@@ -21,16 +22,33 @@ const get = async (req, res) => {
   res.json({ success: true, data: { ...invoice.toObject(), lines } });
 };
 
+const ensureOwnedContract = async (contractId, companyId) => {
+  if (!contractId) return true;
+  return Boolean(await Contract.findOne({ _id: contractId, company: companyId }));
+};
+
 const create = async (req, res) => {
-  const payload = { ...req.body, company: req.user.company };
-  const invoice = await Invoice.create(payload);
+  const payload = buildInvoiceInput(req.body);
+  if (!(await ensureOwnedContract(payload.contract, req.user.company))) {
+    return res.status(400).json({ success: false, message: 'Contract not found' });
+  }
+
+  const invoice = await Invoice.create({ ...payload, company: req.user.company });
   res.status(201).json({ success: true, data: invoice });
 };
 
 const update = async (req, res) => {
+  const payload = buildInvoiceInput(req.body);
+  if (!Object.keys(payload).length) {
+    return res.status(400).json({ success: false, message: 'No supported fields to update' });
+  }
+  if (!(await ensureOwnedContract(payload.contract, req.user.company))) {
+    return res.status(400).json({ success: false, message: 'Contract not found' });
+  }
+
   const invoice = await Invoice.findOneAndUpdate(
     { _id: req.params.id, company: req.user.company },
-    req.body,
+    { $set: payload },
     { new: true, runValidators: true },
   );
   if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
