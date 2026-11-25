@@ -29,9 +29,23 @@ test('dispute transitions are bounded', () => {
 test('only accepted, non-skipped flags are dispute eligible', () => {
   assert.equal(isFlagged({ verdict: 'overcharged' }), true);
   assert.equal(isFlagged({ verdict: 'skipped' }), false);
+  assert.equal(isAcceptedFlag({ verdict: 'invalid', customerDecision: 'accept' }), true);
+  assert.equal(isAcceptedFlag({ verdict: 'invalid' }), false);
+  assert.equal(isAcceptedFlag({ verdict: 'ok', customerDecision: 'accept' }), false);
   assert.equal(isAcceptedFlag({ verdict: 'invalid', reviewStatus: 'confirmed' }), true);
-  assert.equal(isAcceptedFlag({ verdict: 'invalid', reviewStatus: 'unreviewed' }), false);
-  assert.equal(isAcceptedFlag({ verdict: 'ok', reviewStatus: 'confirmed' }), false);
+});
+
+test('operator rejection wins over customer acceptance', () => {
+  const line = { verdict: 'invalid', confidence: 0.92, customerDecision: 'accept' };
+  assert.equal(isAcceptedFlag(line), true);
+  assert.equal(isAcceptedFlag({ ...line, operatorDecision: 'rejected' }), false);
+  assert.equal(isAcceptedFlag({ ...line, customerDecision: 'reject' }), false);
+});
+
+test('low-confidence flags need both customer and operator approval', () => {
+  const line = { verdict: 'invalid', confidence: 0.68, customerDecision: 'accept' };
+  assert.equal(isAcceptedFlag(line), false);
+  assert.equal(isAcceptedFlag({ ...line, operatorDecision: 'confirmed' }), true);
 });
 
 test('letter includes only accepted flags and totals the claim', () => {
@@ -53,7 +67,7 @@ test('letter includes only accepted flags and totals the claim', () => {
         correctAmount: 720,
         reason: 'Free days applied',
         verdict: 'overcharged',
-        reviewStatus: 'confirmed',
+        customerDecision: 'accept',
       },
       {
         feeType: 'detention',

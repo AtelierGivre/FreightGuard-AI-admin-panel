@@ -20,7 +20,22 @@ const invoiceLineSchema = new mongoose.Schema(
     correctAmount: { type: Number },
     reason: { type: String },
     confidence: { type: Number, min: 0, max: 1 },
-    // Customer accept/reject and operator review share one decision field.
+    // Customer and operator decisions are stored separately so neither can
+    // overwrite the other. reviewStatus is kept as a legacy display mirror.
+    customerDecision: {
+      type: String,
+      enum: [null, 'accept', 'reject'],
+      default: null,
+    },
+    customerReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    customerReviewedAt: { type: Date },
+    operatorDecision: {
+      type: String,
+      enum: [null, 'confirmed', 'rejected'],
+      default: null,
+    },
+    operatorReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    operatorReviewedAt: { type: Date },
     reviewStatus: {
       type: String,
       enum: ['unreviewed', 'confirmed', 'rejected'],
@@ -34,6 +49,8 @@ const invoiceLineSchema = new mongoose.Schema(
 );
 
 invoiceLineSchema.index({ invoice: 1 });
+invoiceLineSchema.index({ operatorDecision: 1, confidence: 1 });
+invoiceLineSchema.index({ customerDecision: 1 });
 invoiceLineSchema.index({ reviewStatus: 1, confidence: 1 });
 
 module.exports = mongoose.model('InvoiceLine', invoiceLineSchema);

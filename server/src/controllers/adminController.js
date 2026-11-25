@@ -9,7 +9,7 @@ const AuditJob = require('../models/AuditJob');
 const config = require('../config/env');
 const { ROLES, STAFF_ROLES } = require('../config/constants');
 const { round2 } = require('../utils/round');
-const { isFlagged } = require('../utils/domain');
+const { isFlagged, syncReviewStatus } = require('../utils/domain');
 
 /** Platform-wide statistics for the admin overview. */
 const getStats = async (req, res) => {
@@ -65,7 +65,7 @@ const getStats = async (req, res) => {
 /** Paginated operator review queue (unreviewed flags first). */
 const getReviewQueue = async (req, res) => {
   const { status = 'unreviewed', limit = 50, page = 1, invoiceId } = req.query;
-  const filter = { reviewStatus: status };
+  const filter = { operatorDecision: status === 'unreviewed' ? null : status };
   if (invoiceId) filter.invoice = invoiceId;
 
   const pageNumber = Number(page);
@@ -101,9 +101,10 @@ const reviewLine = async (req, res) => {
   const line = await InvoiceLine.findById(req.params.id);
   if (!line) return res.status(404).json({ success: false, message: 'Line not found' });
 
-  line.reviewStatus = reviewStatus || 'confirmed';
-  line.reviewedBy = req.user._id;
-  line.reviewedAt = new Date();
+  line.operatorDecision = reviewStatus || 'confirmed';
+  line.operatorReviewedBy = req.user._id;
+  line.operatorReviewedAt = new Date();
+  syncReviewStatus(line);
   if (reviewNote !== undefined) line.reviewNote = reviewNote;
   if (correctAmount !== undefined) line.correctAmount = correctAmount;
   if (verdict !== undefined) line.verdict = verdict;

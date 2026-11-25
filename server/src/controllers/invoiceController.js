@@ -2,7 +2,7 @@ const Invoice = require('../models/Invoice');
 const InvoiceLine = require('../models/InvoiceLine');
 const Contract = require('../models/Contract');
 const { auditInvoice } = require('../utils/rulesEngine');
-const { isFlagged } = require('../utils/domain');
+const { isFlagged, syncReviewStatus } = require('../utils/domain');
 const { buildAuditLineWrite } = require('../utils/auditPersistence');
 
 const list = async (req, res) => {
@@ -106,9 +106,10 @@ const reviewFlag = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Only flagged lines can be reviewed' });
   }
 
-  line.reviewStatus = decision === 'accept' ? 'confirmed' : 'rejected';
-  line.reviewedBy = req.user._id;
-  line.reviewedAt = new Date();
+  line.customerDecision = decision === 'accept' ? 'accept' : 'reject';
+  line.customerReviewedBy = req.user._id;
+  line.customerReviewedAt = new Date();
+  syncReviewStatus(line);
   if (reviewNote !== undefined) line.reviewNote = reviewNote;
   await line.save();
 
