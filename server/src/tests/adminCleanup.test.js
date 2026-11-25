@@ -8,6 +8,7 @@ const InvoiceLine = require('../models/InvoiceLine');
 const Dispute = require('../models/Dispute');
 const Recovery = require('../models/Recovery');
 const AuditJob = require('../models/AuditJob');
+const AuditLog = require('../models/AuditLog');
 const controller = require('../controllers/adminController');
 
 test('tenant cleanup cascades across every workspace collection', async () => {
@@ -19,6 +20,7 @@ test('tenant cleanup cascades across every workspace collection', async () => {
   };
   const deleteMany = (name) => async (filter) => {
     calls.push({ model: name, filter });
+    return { deletedCount: 1 };
   };
 
   stub(Company, 'findById', async () => ({ _id: 'target-company' }));
@@ -35,6 +37,9 @@ test('tenant cleanup cascades across every workspace collection', async () => {
   stub(Dispute, 'deleteMany', deleteMany('Dispute.deleteMany'));
   stub(Recovery, 'deleteMany', deleteMany('Recovery.deleteMany'));
   stub(AuditJob, 'deleteMany', deleteMany('AuditJob.deleteMany'));
+  stub(AuditLog, 'create', async (docs) => {
+    calls.push({ model: 'AuditLog.create', action: docs[0].action });
+  });
 
   let response;
   const res = {
@@ -70,6 +75,9 @@ test('tenant cleanup cascades across every workspace collection', async () => {
   assert.deepEqual(cascaded['AuditJob.deleteMany'], { invoice: { $in: ['invoice-1'] } });
   assert.deepEqual(cascaded['Dispute.deleteMany'], { company: 'target-company' });
   assert.deepEqual(cascaded['Recovery.deleteMany'], { company: 'target-company' });
+  assert.ok(
+    calls.some((call) => call.model === 'AuditLog.create' && call.action === 'company.delete'),
+  );
 });
 
 test('tenant cleanup refuses to delete the caller company', async () => {

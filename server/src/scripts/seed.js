@@ -12,6 +12,7 @@ const Invoice = require('../models/Invoice');
 const InvoiceLine = require('../models/InvoiceLine');
 const Dispute = require('../models/Dispute');
 const Recovery = require('../models/Recovery');
+const AuditLog = require('../models/AuditLog');
 const { calculateFee } = require('../utils/domain');
 
 const seed = async () => {
@@ -25,6 +26,7 @@ const seed = async () => {
     InvoiceLine.deleteMany(),
     Dispute.deleteMany(),
     Recovery.deleteMany(),
+    AuditLog.deleteMany(),
   ]);
 
   // Admin + operator accounts

@@ -6,10 +6,12 @@ const InvoiceLine = require('../models/InvoiceLine');
 const Dispute = require('../models/Dispute');
 const Recovery = require('../models/Recovery');
 const AuditJob = require('../models/AuditJob');
+const AuditLog = require('../models/AuditLog');
 const config = require('../config/env');
 const { ROLES, STAFF_ROLES } = require('../config/constants');
 const { round2 } = require('../utils/round');
 const { isFlagged, syncReviewStatus } = require('../utils/domain');
+const { withWriteSession } = require('../utils/writeSession');
 
 /** Platform-wide statistics for the admin overview. */
 const getStats = async (req, res) => {
@@ -163,26 +165,59 @@ const deleteCompany = async (req, res) => {
     return res.status(400).json({ success: false, message: 'You cannot delete your own company' });
   }
 
-  const company = await Company.findById(req.params.id);
-  if (!company) return res.status(404).json({ success: false, message: 'Company not found' });
+  try {
+    await withWriteSession(async (session) => {
+      const options = session ? { session } : {};
+      const findById = (id) => {
+        const query = Company.findById(id);
+        return session ? query.session(session) : query;
+      };
+      const deleteMany = (model, filter) => model.deleteMany(filter, options);
 
-  const invoices = await Invoice.find({ company: company._id }).select('_id');
-  const invoiceIds = invoices.map((invoice) => invoice._id);
+      const company = await findById(req.params.id);
+      if (!company) {
+        const error = new Error('Company not found');
+        error.statusCode = 404;
+        throw error;
+      }
 
-  await Promise.all([
-    User.deleteMany({ company: company._id }),
-    Contract.deleteMany({ company: company._id }),
-    Dispute.deleteMany({ company: company._id }),
-    Recovery.deleteMany({ company: company._id }),
-  ]);
-  await Promise.all([
-    InvoiceLine.deleteMany({ invoice: { $in: invoiceIds } }),
-    AuditJob.deleteMany({ invoice: { $in: invoiceIds } }),
-    Invoice.deleteMany({ company: company._id }),
-  ]);
-  await Company.findByIdAndDelete(company._id);
+      const invoiceQuery = Invoice.find({ company: company._id }).select('_id');
+      const invoices = await (session ? invoiceQuery.session(session) : invoiceQuery);
+      const invoiceIds = invoices.map((invoice) => invoice._id);
 
-  return res.json({ success: true, message: 'Company and workspace data deleted' });
+      const deleted = {
+        users: (await deleteMany(User, { company: company._id })).deletedCount ?? 0,
+        contracts: (await deleteMany(Contract, { company: company._id })).deletedCount ?? 0,
+        disputes: (await deleteMany(Dispute, { company: company._id })).deletedCount ?? 0,
+        recoveries: (await deleteMany(Recovery, { company: company._id })).deletedCount ?? 0,
+        invoiceLines:
+          (await deleteMany(InvoiceLine, { invoice: { $in: invoiceIds } })).deletedCount ?? 0,
+        auditJobs: (await deleteMany(AuditJob, { invoice: { $in: invoiceIds } })).deletedCount ?? 0,
+        invoices: (await deleteMany(Invoice, { company: company._id })).deletedCount ?? 0,
+      };
+
+      await Company.findByIdAndDelete(company._id, options);
+      await AuditLog.create(
+        [
+          {
+            actor: req.user._id,
+            action: 'company.delete',
+            company: company._id,
+            targetId: company._id,
+            details: { companyName: company.name, deleted },
+          },
+        ],
+        options,
+      );
+    });
+
+    return res.json({ success: true, message: 'Company and workspace data deleted' });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    throw error;
+  }
 };
 
 /** Platform-wide invoice oversight. */
