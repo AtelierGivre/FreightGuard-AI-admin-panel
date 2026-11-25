@@ -18,7 +18,7 @@ const ROLES = Object.freeze({
   ADMIN: 'admin',
 });
 
-/** Roles allowed to see the admin panel (read-only oversight for operators). */
+/** Roles allowed to review flags and manage fee billing across tenants. */
 const STAFF_ROLES = Object.freeze([ROLES.OPERATOR, ROLES.ADMIN]);
 
 /** Allowed values for Mongoose enum fields. Reuse in validation chains. */

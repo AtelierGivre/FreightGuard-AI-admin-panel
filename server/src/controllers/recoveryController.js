@@ -1,4 +1,5 @@
 const Recovery = require('../models/Recovery');
+const { STAFF_ROLES } = require('../config/constants');
 
 const list = async (req, res) => {
   const recoveries = await Recovery.find({ company: req.user.company })
@@ -15,8 +16,12 @@ const list = async (req, res) => {
 /** Mark the contingency fee as settled. Restricted to staff at the route level. */
 const updateBilling = async (req, res) => {
   const { billingStatus } = req.body;
+  // Staff can bill any tenant's recovery. Customers are limited to their own.
+  const filter = STAFF_ROLES.includes(req.user.role)
+    ? { _id: req.params.id }
+    : { _id: req.params.id, company: req.user.company };
   const recovery = await Recovery.findOneAndUpdate(
-    { _id: req.params.id, company: req.user.company },
+    filter,
     {
       billingStatus,
       billedAt: billingStatus === 'paid' ? new Date() : null,

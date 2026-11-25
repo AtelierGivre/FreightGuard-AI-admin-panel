@@ -11,6 +11,7 @@ import { api } from '@/lib/api';
 import { formatDate, money } from '@/lib/format';
 import { downloadLetterPdf, downloadLetterText } from '@/lib/letterExport';
 import { useApiData } from '@/hooks/useApiData';
+import { useAuth } from '@/context/AuthContext';
 
 const STATUSES = ['draft', 'sent', 'under_review', 'won', 'lost'];
 const NEXT_STATUS = {
@@ -39,6 +40,7 @@ const fetchDisputeWorkspace = async () => {
 const sumBy = (rows, key) => (rows || []).reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
 
 export default function Disputes() {
+  const { isStaff } = useAuth();
   const { data, loading, error, reload } = useApiData(fetchDisputeWorkspace);
   const [selectedId, setSelectedId] = useState('');
   const [letterText, setLetterText] = useState('');
@@ -356,22 +358,24 @@ export default function Disputes() {
                   {formatDate(selectedRecovery.recoveredAt)} · Fee{' '}
                   <strong>{money(selectedRecovery.feeAmount)}</strong> ({selectedRecovery.feePct}%)
                   · Billing: {selectedRecovery.billingStatus}
-                  <div className="flex gap-8 mt-8">
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => markBilling('paid')}
-                      disabled={selectedRecovery.billingStatus === 'paid' || busy === 'billing'}
-                    >
-                      Mark fee paid
-                    </button>
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => markBilling('due')}
-                      disabled={selectedRecovery.billingStatus === 'due' || busy === 'billing'}
-                    >
-                      Mark due
-                    </button>
-                  </div>
+                  {isStaff && (
+                    <div className="flex gap-8 mt-8">
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => markBilling('paid')}
+                        disabled={selectedRecovery.billingStatus === 'paid' || busy === 'billing'}
+                      >
+                        Mark fee paid
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => markBilling('due')}
+                        disabled={selectedRecovery.billingStatus === 'due' || busy === 'billing'}
+                      >
+                        Mark due
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 selected.status !== 'lost' &&
