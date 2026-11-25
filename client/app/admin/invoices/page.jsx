@@ -1,17 +1,33 @@
 'use client';
 
+import { useState } from 'react';
 import Layout from '@/components/Layout';
 import Protected from '@/components/Protected';
 import StatusPill from '@/components/StatusPill';
 import DataTable from '@/components/DataTable';
+import Pagination from '@/components/Pagination';
 import { api } from '@/lib/api';
 import { money } from '@/lib/format';
 import { STAFF_ROLES } from '@/lib/constants';
 import { useApiData } from '@/hooks/useApiData';
 
+const PAGE_SIZE = 50;
+const sumBy = (rows, key) => (rows || []).reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+
 export default function AdminInvoices() {
-  const { data: invoices, loading, error, reload } = useApiData(api.getAllInvoices);
-  const total = (invoices || []).reduce((sum, invoice) => sum + (invoice.totalBilled || 0), 0);
+  const [page, setPage] = useState(1);
+  const {
+    data: invoices,
+    meta,
+    loading,
+    error,
+    reload,
+  } = useApiData(
+    () => api.getAllInvoices({ limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE }),
+    [page],
+  );
+  const summary = meta?.summary || {};
+  const total = summary.totalBilled ?? sumBy(invoices, 'totalBilled');
 
   return (
     <Protected roles={STAFF_ROLES}>
@@ -28,7 +44,9 @@ export default function AdminInvoices() {
         <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <div className="kpi-card">
             <div className="kpi-label">Total invoices</div>
-            <div className="kpi-value">{loading ? '—' : invoices?.length || 0}</div>
+            <div className="kpi-value">
+              {loading ? '—' : (meta?.total ?? invoices?.length ?? 0)}
+            </div>
           </div>
           <div className="kpi-card">
             <div className="kpi-label">Total billed</div>
@@ -37,7 +55,8 @@ export default function AdminInvoices() {
           <div className="kpi-card">
             <div className="kpi-label">Audited</div>
             <div className="kpi-value">
-              {(invoices || []).filter((invoice) => invoice.auditStatus === 'audited').length}
+              {summary.audited ??
+                (invoices || []).filter((invoice) => invoice.auditStatus === 'audited').length}
             </div>
           </div>
         </div>
@@ -68,6 +87,7 @@ export default function AdminInvoices() {
             rows={invoices || []}
             loading={loading}
           />
+          <Pagination meta={meta} onPage={setPage} disabled={loading} />
         </div>
       </Layout>
     </Protected>

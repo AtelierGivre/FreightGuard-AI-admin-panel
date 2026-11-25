@@ -6,25 +6,34 @@ import Layout from '@/components/Layout';
 import Protected from '@/components/Protected';
 import KpiCard from '@/components/KpiCard';
 import DataTable from '@/components/DataTable';
+import Pagination from '@/components/Pagination';
 import { api } from '@/lib/api';
 import { formatDate, money } from '@/lib/format';
 import { useApiData } from '@/hooks/useApiData';
 import { useAuth } from '@/context/AuthContext';
 
 const sumBy = (rows, key) => (rows || []).reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+const PAGE_SIZE = 50;
 
 export default function Recoveries() {
-  const { data, loading, error, reload } = useApiData(api.getRecoveries);
+  const [page, setPage] = useState(1);
+  const { data, meta, loading, error, reload } = useApiData(
+    () => api.getRecoveries({ limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE }),
+    [page],
+  );
   const { isStaff } = useAuth();
   const [actionError, setActionError] = useState('');
   const [busyId, setBusyId] = useState('');
 
   const recoveries = data || [];
-  const total = sumBy(recoveries, 'amount');
-  const fees = sumBy(recoveries, 'feeAmount');
-  const due = recoveries
-    .filter((row) => row.billingStatus !== 'paid')
-    .reduce((sum, row) => sum + (Number(row.feeAmount) || 0), 0);
+  const summary = meta?.summary || {};
+  const total = summary.amount ?? sumBy(recoveries, 'amount');
+  const fees = summary.fees ?? sumBy(recoveries, 'feeAmount');
+  const due =
+    summary.due ??
+    recoveries
+      .filter((row) => row.billingStatus !== 'paid')
+      .reduce((sum, row) => sum + (Number(row.feeAmount) || 0), 0);
 
   const updateBilling = async (row, billingStatus) => {
     setBusyId(row._id);
@@ -82,7 +91,7 @@ export default function Recoveries() {
         <div className="card">
           <div className="card-header">
             <h3>Recovery records</h3>
-            <span className="text-sm text-muted">{recoveries.length} records</span>
+            <span className="text-sm text-muted">{meta?.total ?? recoveries.length} records</span>
           </div>
           <DataTable
             columns={[
@@ -158,6 +167,7 @@ export default function Recoveries() {
             loading={loading}
             empty="No recoveries recorded yet."
           />
+          <Pagination meta={meta} onPage={setPage} disabled={loading} />
         </div>
       </Layout>
     </Protected>

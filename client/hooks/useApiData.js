@@ -15,6 +15,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export function useApiData(fetcher, deps = []) {
   const fetcherRef = useRef(fetcher);
   const [data, setData] = useState(null);
+  const [meta, setMeta] = useState(null);
+  const [envelope, setEnvelope] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -27,10 +29,13 @@ export function useApiData(fetcher, deps = []) {
     setError('');
     try {
       const result = await fetcherRef.current();
+      setEnvelope(result);
+      setMeta(result?.meta ?? null);
       setData(result?.data ?? result ?? null);
       return result;
     } catch (err) {
       setError(err.message || 'Unable to load data');
+      setMeta(null);
       return null;
     } finally {
       setLoading(false);
@@ -54,5 +59,5 @@ export function useApiData(fetcher, deps = []) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
-  return { data, loading, error, reload, setData };
+  return { data, meta, envelope, loading, error, reload, setData };
 }

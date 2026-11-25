@@ -12,6 +12,7 @@ const { ROLES, STAFF_ROLES } = require('../config/constants');
 const { round2 } = require('../utils/round');
 const { isFlagged, syncReviewStatus } = require('../utils/domain');
 const { withWriteSession } = require('../utils/writeSession');
+const { parsePagination } = require('../utils/pagination');
 
 /** Platform-wide statistics for the admin overview. */
 const getStats = async (req, res) => {
@@ -66,14 +67,11 @@ const getStats = async (req, res) => {
 
 /** Paginated operator review queue (unreviewed flags first). */
 const getReviewQueue = async (req, res) => {
-  const { status = 'unreviewed', limit = 50, page = 1, invoiceId } = req.query;
+  const { status = 'unreviewed', invoiceId } = req.query;
   const filter = { operatorDecision: status === 'unreviewed' ? null : status };
   if (invoiceId) filter.invoice = invoiceId;
 
-  const pageNumber = Number(page);
-  const pageSize = Number(limit);
-  const skip = (pageNumber - 1) * pageSize;
-
+  const { limit, skip, meta } = parsePagination(req.query);
   const [items, total] = await Promise.all([
     InvoiceLine.find(filter)
       .populate({
@@ -83,16 +81,18 @@ const getReviewQueue = async (req, res) => {
       })
       .sort({ confidence: 1, createdAt: -1 })
       .skip(skip)
-      .limit(pageSize),
+      .limit(limit),
     InvoiceLine.countDocuments(filter),
   ]);
 
+  const pageMeta = meta(total);
   res.json({
     success: true,
     count: items.length,
     total,
-    page: pageNumber,
-    pages: Math.ceil(total / pageSize),
+    page: pageMeta.page,
+    pages: pageMeta.pages,
+    meta: pageMeta,
     data: items,
   });
 };
@@ -117,8 +117,12 @@ const reviewLine = async (req, res) => {
 
 /** User management (admin only at the route level). */
 const listUsers = async (req, res) => {
-  const users = await User.find().populate('company', 'name plan').sort({ createdAt: -1 });
-  res.json({ success: true, count: users.length, data: users });
+  const { limit, skip, meta } = parsePagination(req.query);
+  const [users, total] = await Promise.all([
+    User.find().populate('company', 'name plan').sort({ createdAt: -1 }).skip(skip).limit(limit),
+    User.countDocuments(),
+  ]);
+  res.json({ success: true, count: users.length, total, meta: meta(total), data: users });
 };
 
 const updateUser = async (req, res) => {
@@ -222,27 +226,67 @@ const deleteCompany = async (req, res) => {
 
 /** Platform-wide invoice oversight. */
 const allInvoices = async (req, res) => {
-  const invoices = await Invoice.find()
-    .populate('company', 'name')
-    .populate('contract', 'carrierName port')
-    .sort({ createdAt: -1 });
-  res.json({ success: true, count: invoices.length, data: invoices });
+  const { limit, skip, meta } = parsePagination(req.query);
+  const [invoices, total, summaryRows] = await Promise.all([
+    Invoice.find()
+      .populate('company', 'name')
+      .populate('contract', 'carrierName port')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Invoice.countDocuments(),
+    Invoice.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalBilled: { $sum: '$totalBilled' },
+          audited: {
+            $sum: { $cond: [{ $eq: ['$auditStatus', 'audited'] }, 1, 0] },
+          },
+        },
+      },
+    ]),
+  ]);
+  const summary = summaryRows[0] || { totalBilled: 0, audited: 0 };
+  res.json({
+    success: true,
+    count: invoices.length,
+    total,
+    meta: meta(total, {
+      summary: {
+        totalBilled: round2(summary.totalBilled || 0),
+        audited: summary.audited || 0,
+      },
+    }),
+    data: invoices,
+  });
 };
 
 /** Platform-wide dispute oversight. */
 const allDisputes = async (req, res) => {
-  const disputes = await Dispute.find()
-    .populate('company', 'name')
-    .populate('invoice', 'invoiceNumber carrierName containerNumber')
-    .sort({ createdAt: -1 });
-  res.json({ success: true, count: disputes.length, data: disputes });
+  const { limit, skip, meta } = parsePagination(req.query);
+  const [disputes, total] = await Promise.all([
+    Dispute.find()
+      .populate('company', 'name')
+      .populate('invoice', 'invoiceNumber carrierName containerNumber')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Dispute.countDocuments(),
+  ]);
+  res.json({ success: true, count: disputes.length, total, meta: meta(total), data: disputes });
 };
 
 /** Fee configuration shown in the admin settings screen. */
 const getSettings = async (req, res) => {
-  const companies = await Company.find().select('name feePct plan');
+  const { limit, skip, meta } = parsePagination(req.query, 200);
+  const [companies, total] = await Promise.all([
+    Company.find().select('name feePct plan').sort({ name: 1 }).skip(skip).limit(limit),
+    Company.countDocuments(),
+  ]);
   res.json({
     success: true,
+    meta: meta(total),
     data: {
       defaultFeePct: config.defaultFeePct,
       staffRoles: STAFF_ROLES,

@@ -52,7 +52,11 @@ const getDashboard = async (req, res) => {
         recoveredAmount,
         recoveryRate: totalBilled > 0 ? round2((recoveredAmount / totalBilled) * 100) : 0,
         feeDue,
+        feeRecorded: round2(recoveries.reduce((sum, item) => sum + (item.feeAmount || 0), 0)),
         feePct: Number(company?.feePct ?? config.defaultFeePct),
+        disputedAmount: round2(
+          disputes.reduce((sum, dispute) => sum + (dispute.disputedAmount || 0), 0),
+        ),
         activeDisputes: disputes.filter((dispute) => !['won', 'lost'].includes(dispute.status))
           .length,
       },

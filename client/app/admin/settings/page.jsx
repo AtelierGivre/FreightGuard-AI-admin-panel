@@ -1,15 +1,26 @@
 'use client';
 
+import { useState } from 'react';
 import { Percent, Database } from 'lucide-react';
 import Layout from '@/components/Layout';
 import Protected from '@/components/Protected';
 import DataTable from '@/components/DataTable';
+import Pagination from '@/components/Pagination';
 import { api } from '@/lib/api';
 import { ROLES } from '@/lib/constants';
 import { useApiData } from '@/hooks/useApiData';
 
+const PAGE_SIZE = 200;
+
 export default function AdminSettings() {
-  const { data: settings, loading, error, reload } = useApiData(api.getSettings);
+  const [page, setPage] = useState(1);
+  const {
+    data: settings,
+    meta,
+    loading,
+    error,
+    reload,
+  } = useApiData(() => api.getSettings({ limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE }), [page]);
 
   return (
     <Protected roles={[ROLES.ADMIN]}>
@@ -66,6 +77,7 @@ export default function AdminSettings() {
             rows={settings?.companies || []}
             loading={loading}
           />
+          <Pagination meta={meta} onPage={setPage} disabled={loading} />
         </div>
 
         <div className="card">

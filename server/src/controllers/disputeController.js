@@ -14,6 +14,7 @@ const {
   RECOVERY_ALLOWED_STATUSES,
 } = require('../utils/domain');
 const { generateDisputeLetter } = require('../utils/letterGenerator');
+const { parsePagination } = require('../utils/pagination');
 
 const INVOICE_FIELDS = 'invoiceNumber carrierName containerNumber port totalBilled currency';
 const LINE_FIELDS =
@@ -23,8 +24,13 @@ const populateDispute = (query) =>
   query.populate('invoice', INVOICE_FIELDS).populate('lines', LINE_FIELDS).sort({ createdAt: -1 });
 
 const list = async (req, res) => {
-  const disputes = await populateDispute(Dispute.find({ company: req.user.company }));
-  res.json({ success: true, count: disputes.length, data: disputes });
+  const { limit, skip, meta } = parsePagination(req.query);
+  const filter = { company: req.user.company };
+  const [disputes, total] = await Promise.all([
+    populateDispute(Dispute.find(filter)).skip(skip).limit(limit),
+    Dispute.countDocuments(filter),
+  ]);
+  res.json({ success: true, count: disputes.length, total, meta: meta(total), data: disputes });
 };
 
 const get = async (req, res) => {

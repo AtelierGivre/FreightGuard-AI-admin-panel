@@ -6,15 +6,24 @@ import Layout from '@/components/Layout';
 import Protected from '@/components/Protected';
 import StatusPill from '@/components/StatusPill';
 import DataTable from '@/components/DataTable';
+import Pagination from '@/components/Pagination';
 import { api } from '@/lib/api';
 import { money, confidencePct } from '@/lib/format';
 import { useApiData } from '@/hooks/useApiData';
 
 const emptyForm = { invoiceNumber: '', carrierName: '', port: '', totalBilled: '' };
 const isFlaggedLine = (line) => !['ok', 'skipped'].includes(line.verdict);
+const PAGE_SIZE = 50;
 
 export default function Invoices() {
-  const { data: invoices, loading, error, reload } = useApiData(api.getInvoices);
+  const [page, setPage] = useState(1);
+  const {
+    data: invoices,
+    meta,
+    loading,
+    error,
+    reload,
+  } = useApiData(() => api.getInvoices({ limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE }), [page]);
   const [selected, setSelected] = useState(null);
   const [lines, setLines] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -92,7 +101,7 @@ export default function Invoices() {
 
         <div className="flex justify-between items-center mb-16">
           <span className="text-sm text-muted">
-            {loading ? 'Loading…' : `${invoices?.length || 0} invoices`}
+            {loading ? 'Loading…' : `${meta?.total ?? invoices?.length ?? 0} invoices`}
           </span>
           <button className="btn btn-primary" onClick={() => setShowAdd((value) => !value)}>
             <Plus size={15} /> Add invoice
@@ -202,6 +211,7 @@ export default function Invoices() {
             rows={invoices || []}
             loading={loading}
           />
+          <Pagination meta={meta} onPage={setPage} disabled={loading} />
         </div>
 
         {selected && (

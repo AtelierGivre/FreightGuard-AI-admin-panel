@@ -878,6 +878,23 @@ table.data tbody tr:hover {
   box-shadow: none;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+@media (max-width: 640px) {
+  .pagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 /* ---------- Forms ---------- */
 .form-grid {
   display: grid;

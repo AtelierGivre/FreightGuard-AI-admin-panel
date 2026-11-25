@@ -5,12 +5,20 @@ const { auditInvoice } = require('../utils/rulesEngine');
 const { isFlagged, syncReviewStatus } = require('../utils/domain');
 const { buildAuditLineWrite } = require('../utils/auditPersistence');
 const { buildInvoiceInput } = require('../utils/invoiceInput');
+const { parsePagination } = require('../utils/pagination');
 
 const list = async (req, res) => {
-  const invoices = await Invoice.find({ company: req.user.company })
-    .populate('contract', 'carrierName port')
-    .sort({ createdAt: -1 });
-  res.json({ success: true, count: invoices.length, data: invoices });
+  const { limit, skip, meta } = parsePagination(req.query);
+  const filter = { company: req.user.company };
+  const [invoices, total] = await Promise.all([
+    Invoice.find(filter)
+      .populate('contract', 'carrierName port')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Invoice.countDocuments(filter),
+  ]);
+  res.json({ success: true, count: invoices.length, total, meta: meta(total), data: invoices });
 };
 
 const get = async (req, res) => {

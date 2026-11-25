@@ -30,6 +30,15 @@ export const apiBaseUrl = API_URL || null;
 
 const getToken = () => (isBrowser ? localStorage.getItem(TOKEN_KEY) : null);
 
+const withQuery = (path, params = {}) => {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') search.set(key, String(value));
+  }
+  const query = search.toString();
+  return query ? `${path}?${query}` : path;
+};
+
 const ensureConfigured = () => {
   if (!API_URL && !PREVIEW_MODE) {
     throw new Error('Backend is not configured. Set NEXT_PUBLIC_API_URL and rebuild the client.');
@@ -123,7 +132,7 @@ export const api = {
   getDashboard: () => withPreview(preview.dashboardData, '/dashboard'),
 
   // --- Invoices -------------------------------------------------------------
-  getInvoices: () => withPreview(preview.invoices, '/invoices'),
+  getInvoices: (params) => withPreview(preview.invoices, withQuery('/invoices', params)),
   getInvoice: (id) =>
     withPreview(() => {
       const invoice = preview.invoices.find((item) => item._id === id);
@@ -163,10 +172,10 @@ export const api = {
 
   // --- Admin panel ----------------------------------------------------------
   getAdminStats: () => withPreview(preview.adminStats, '/admin/stats'),
-  getReviewQueue: () =>
+  getReviewQueue: (params) =>
     withPreview(
       preview.invoiceLines.filter((line) => line.reviewStatus === 'unreviewed'),
-      '/admin/review-queue',
+      withQuery('/admin/review-queue', params),
     ),
   reviewLine: (id, payload) =>
     withPreview(
@@ -178,7 +187,7 @@ export const api = {
       `/admin/review/${id}`,
       jsonBody('PUT', payload),
     ),
-  getUsers: () => withPreview(preview.users, '/admin/users'),
+  getUsers: (params) => withPreview(preview.users, withQuery('/admin/users', params)),
   updateUser: (id, payload) =>
     withPreview(
       () => {
@@ -189,9 +198,9 @@ export const api = {
       `/admin/users/${id}`,
       jsonBody('PUT', payload),
     ),
-  getAllInvoices: () => withPreview(preview.invoices, '/admin/invoices'),
-  getAllDisputes: () => withPreview(preview.disputes, '/admin/disputes'),
-  getSettings: () =>
+  getAllInvoices: (params) => withPreview(preview.invoices, withQuery('/admin/invoices', params)),
+  getAllDisputes: (params) => withPreview(preview.disputes, withQuery('/admin/disputes', params)),
+  getSettings: (params) =>
     withPreview(
       {
         defaultFeePct: DEFAULT_FEE_PCT,
@@ -199,7 +208,7 @@ export const api = {
           { id: 'preview-co', name: 'Harborline Imports', feePct: DEFAULT_FEE_PCT, plan: 'free' },
         ],
       },
-      '/admin/settings',
+      withQuery('/admin/settings', params),
     ),
 
   // --- Flag accept / reject -------------------------------------------------
@@ -220,7 +229,7 @@ export const api = {
     ),
 
   // --- Disputes -------------------------------------------------------------
-  getDisputes: () => withPreview(preview.disputes, '/disputes'),
+  getDisputes: (params) => withPreview(preview.disputes, withQuery('/disputes', params)),
   getDispute: (id) =>
     withPreview(preview.disputes.find((item) => item._id === id) || null, `/disputes/${id}`),
   createDispute: (payload) =>
@@ -307,7 +316,14 @@ export const api = {
     ),
 
   // --- Recoveries / fee billing --------------------------------------------
-  getRecoveries: () => withPreview(preview.recoveries, '/recoveries'),
+  getRecoveries: (params) => withPreview(preview.recoveries, withQuery('/recoveries', params)),
+  getRecoveryForDispute: (disputeId) =>
+    withPreview(
+      preview.recoveries.find(
+        (item) => String(item.dispute?._id || item.dispute) === String(disputeId),
+      ) || null,
+      `/recoveries/dispute/${disputeId}`,
+    ),
   updateRecoveryBilling: (id, payload) =>
     withPreview(
       () => {

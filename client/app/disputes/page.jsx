@@ -7,12 +7,16 @@ import Protected from '@/components/Protected';
 import StatusPill from '@/components/StatusPill';
 import DataTable from '@/components/DataTable';
 import KpiCard from '@/components/KpiCard';
+import Pagination from '@/components/Pagination';
 import { api } from '@/lib/api';
 import { formatDate, money } from '@/lib/format';
 import { downloadLetterPdf, downloadLetterText } from '@/lib/letterExport';
 import { useApiData } from '@/hooks/useApiData';
 import { useAuth } from '@/context/AuthContext';
 
+const DISPUTE_PAGE_SIZE = 25;
+const RECOVERY_PAGE_SIZE = 50;
+const INVOICE_PAGE_SIZE = 200;
 const STATUSES = ['draft', 'sent', 'under_review', 'won', 'lost'];
 const NEXT_STATUS = {
   draft: ['sent'],
@@ -22,27 +26,53 @@ const NEXT_STATUS = {
   lost: [],
 };
 
-const fetchDisputeWorkspace = async () => {
-  const [disputes, invoices, recoveries] = await Promise.all([
-    api.getDisputes(),
-    api.getInvoices(),
-    api.getRecoveries(),
-  ]);
-  return {
-    data: {
-      disputes: disputes.data || [],
-      invoices: invoices.data || [],
-      recoveries: recoveries.data || [],
-    },
-  };
-};
-
-const sumBy = (rows, key) => (rows || []).reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+const emptyResult = () => Promise.resolve({ data: null });
 
 export default function Disputes() {
   const { isStaff } = useAuth();
-  const { data, loading, error, reload } = useApiData(fetchDisputeWorkspace);
+  const [disputePage, setDisputePage] = useState(1);
+  const {
+    data: disputeRows,
+    meta: disputeMeta,
+    loading: disputesLoading,
+    error: disputesError,
+    reload: reloadDisputes,
+  } = useApiData(
+    () =>
+      api.getDisputes({
+        limit: DISPUTE_PAGE_SIZE,
+        skip: (disputePage - 1) * DISPUTE_PAGE_SIZE,
+      }),
+    [disputePage],
+  );
+  const {
+    data: invoices,
+    loading: invoicesLoading,
+    error: invoicesError,
+    reload: reloadInvoices,
+  } = useApiData(() => api.getInvoices({ limit: INVOICE_PAGE_SIZE }), []);
+  const {
+    data: dashboard,
+    loading: dashboardLoading,
+    error: dashboardError,
+    reload: reloadDashboard,
+  } = useApiData(api.getDashboard, []);
   const [selectedId, setSelectedId] = useState('');
+  const {
+    data: selected,
+    loading: detailLoading,
+    error: detailError,
+    reload: reloadSelectedDispute,
+  } = useApiData(() => (selectedId ? api.getDispute(selectedId) : emptyResult()), [selectedId]);
+  const {
+    data: selectedRecovery,
+    loading: recoveryLoading,
+    error: recoveryError,
+    reload: reloadSelectedRecovery,
+  } = useApiData(
+    () => (selectedId ? api.getRecoveryForDispute(selectedId) : emptyResult()),
+    [selectedId],
+  );
   const [letterText, setLetterText] = useState('');
   const [invoiceId, setInvoiceId] = useState('');
   const [statusChoice, setStatusChoice] = useState('');
@@ -51,17 +81,23 @@ export default function Disputes() {
   const [actionError, setActionError] = useState('');
   const [busy, setBusy] = useState('');
 
-  const disputes = data?.disputes || [];
-  const invoices = data?.invoices || [];
-  const recoveries = data?.recoveries || [];
-  const selected = disputes.find((item) => item._id === selectedId) || null;
-  const selectedRecovery =
-    recoveries.find((item) => String(item.dispute?._id || item.dispute) === selectedId) || null;
+  const disputes = disputeRows || [];
+  const kpis = dashboard?.kpis || {};
+  const loadError =
+    disputesError || invoicesError || dashboardError || detailError || recoveryError;
+  const retryAll = () =>
+    Promise.all([
+      reloadDisputes(),
+      reloadInvoices(),
+      reloadDashboard(),
+      reloadSelectedDispute(),
+      reloadSelectedRecovery(),
+    ]);
 
   const activeInvoiceId =
     invoiceId ||
-    invoices.find((item) => item.auditStatus === 'audited')?._id ||
-    invoices[0]?._id ||
+    (invoices || []).find((item) => item.auditStatus === 'audited')?._id ||
+    invoices?.[0]?._id ||
     '';
 
   const view = (dispute) => {
@@ -83,7 +119,7 @@ export default function Disputes() {
       setLetterText(result.data?.letterText || result.data?.dispute?.letterText || '');
       setSelectedId(result.data?.dispute?._id || '');
       setStatusChoice('');
-      await reload();
+      await Promise.all([reloadDisputes(), reloadDashboard()]);
     } catch (err) {
       setActionError(err.message);
     } finally {
@@ -98,7 +134,7 @@ export default function Disputes() {
     try {
       await api.updateDisputeStatus(selected._id, { status: statusChoice });
       setStatusChoice('');
-      await reload();
+      await Promise.all([reloadDisputes(), reloadDashboard(), reloadSelectedDispute()]);
     } catch (err) {
       setActionError(err.message);
     } finally {
@@ -117,7 +153,12 @@ export default function Disputes() {
         recoveredAt: new Date(recoveredAt).toISOString(),
       });
       setRecoveryAmount('');
-      await reload();
+      await Promise.all([
+        reloadDisputes(),
+        reloadDashboard(),
+        reloadSelectedDispute(),
+        reloadSelectedRecovery(),
+      ]);
     } catch (err) {
       setActionError(err.message);
     } finally {
@@ -131,7 +172,7 @@ export default function Disputes() {
     setActionError('');
     try {
       await api.updateRecoveryBilling(selectedRecovery._id, { billingStatus });
-      await reload();
+      await Promise.all([reloadSelectedRecovery(), reloadDashboard()]);
     } catch (err) {
       setActionError(err.message);
     } finally {
@@ -152,10 +193,10 @@ export default function Disputes() {
   return (
     <Protected>
       <Layout title="Disputes" subtitle="Letters, status tracking and recovery">
-        {error && (
+        {loadError && (
           <div className="alert error mb-16">
-            {error}{' '}
-            <button className="btn btn-ghost btn-sm" onClick={reload}>
+            {loadError}{' '}
+            <button className="btn btn-ghost btn-sm" onClick={retryAll}>
               Retry
             </button>
           </div>
@@ -165,31 +206,31 @@ export default function Disputes() {
         <div className="kpi-grid mb-22">
           <KpiCard
             label="Active disputes"
-            value={disputes.filter((item) => !['won', 'lost'].includes(item.status)).length}
+            value={kpis.activeDisputes ?? 0}
             icon={Scale}
             color="blue"
-            loading={loading}
+            loading={dashboardLoading}
           />
           <KpiCard
             label="Disputed amount"
-            value={money(sumBy(disputes, 'disputedAmount'))}
+            value={money(kpis.disputedAmount ?? 0)}
             icon={FileText}
             color="indigo"
-            loading={loading}
+            loading={dashboardLoading}
           />
           <KpiCard
             label="Recovered"
-            value={money(sumBy(recoveries, 'amount'))}
+            value={money(kpis.recoveredAmount ?? 0)}
             icon={CircleDollarSign}
             color="green"
-            loading={loading}
+            loading={dashboardLoading}
           />
           <KpiCard
             label="Fees recorded"
-            value={money(sumBy(recoveries, 'feeAmount'))}
+            value={money(kpis.feeRecorded ?? 0)}
             icon={Percent}
             color="purple"
-            loading={loading}
+            loading={dashboardLoading}
           />
         </div>
 
@@ -210,9 +251,10 @@ export default function Disputes() {
                   className="form-control"
                   value={activeInvoiceId}
                   onChange={(event) => setInvoiceId(event.target.value)}
+                  disabled={invoicesLoading}
                 >
                   <option value="">Select an invoice</option>
-                  {invoices.map((invoice) => (
+                  {(invoices || []).map((invoice) => (
                     <option key={invoice._id} value={invoice._id}>
                       {invoice.invoiceNumber} · {invoice.carrierName}
                     </option>
@@ -236,7 +278,9 @@ export default function Disputes() {
         <div className="card mb-22">
           <div className="card-header">
             <h3>All disputes</h3>
-            <span className="text-sm text-muted">{disputes.length} records</span>
+            <span className="text-sm text-muted">
+              {disputeMeta?.total ?? disputes.length} records
+            </span>
           </div>
           <DataTable
             columns={[
@@ -278,10 +322,17 @@ export default function Disputes() {
               },
             ]}
             rows={disputes}
-            loading={loading}
+            loading={disputesLoading}
             empty="No disputes yet. Generate a letter from an audited invoice above."
           />
+          <Pagination meta={disputeMeta} onPage={setDisputePage} disabled={disputesLoading} />
         </div>
+
+        {detailLoading && selectedId && (
+          <div className="card mb-22">
+            <div className="empty">Loading dispute detail…</div>
+          </div>
+        )}
 
         {selected && (
           <div className="card">
@@ -352,7 +403,9 @@ export default function Disputes() {
                 </div>
               </div>
 
-              {selectedRecovery ? (
+              {recoveryLoading ? (
+                <div className="empty mt-16">Loading recovery…</div>
+              ) : selectedRecovery ? (
                 <div className="alert success mt-16">
                   Recovered <strong>{money(selectedRecovery.amount)}</strong> on{' '}
                   {formatDate(selectedRecovery.recoveredAt)} · Fee{' '}

@@ -5,12 +5,22 @@ import Layout from '@/components/Layout';
 import Protected from '@/components/Protected';
 import StatusPill from '@/components/StatusPill';
 import DataTable from '@/components/DataTable';
+import Pagination from '@/components/Pagination';
 import { api } from '@/lib/api';
 import { ROLES } from '@/lib/constants';
 import { useApiData } from '@/hooks/useApiData';
 
+const PAGE_SIZE = 50;
+
 export default function UserManagement() {
-  const { data: users, loading, error, reload } = useApiData(api.getUsers);
+  const [page, setPage] = useState(1);
+  const {
+    data: users,
+    meta,
+    loading,
+    error,
+    reload,
+  } = useApiData(() => api.getUsers({ limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE }), [page]);
   const [actionError, setActionError] = useState('');
 
   const change = async (row, patch) => {
@@ -40,7 +50,7 @@ export default function UserManagement() {
           <div className="card-header">
             <h3>All users</h3>
             <span className="text-sm text-muted">
-              {loading ? 'Loading…' : `${users?.length || 0} accounts`}
+              {loading ? 'Loading…' : `${meta?.total ?? users?.length ?? 0} accounts`}
             </span>
           </div>
           <DataTable
@@ -90,6 +100,7 @@ export default function UserManagement() {
             rows={users || []}
             loading={loading}
           />
+          <Pagination meta={meta} onPage={setPage} disabled={loading} />
         </div>
       </Layout>
     </Protected>

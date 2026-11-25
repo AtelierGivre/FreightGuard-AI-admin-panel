@@ -1,16 +1,30 @@
 'use client';
 
+import { useState } from 'react';
 import Layout from '@/components/Layout';
 import Protected from '@/components/Protected';
 import StatusPill from '@/components/StatusPill';
 import DataTable from '@/components/DataTable';
+import Pagination from '@/components/Pagination';
 import { api } from '@/lib/api';
 import { money } from '@/lib/format';
 import { STAFF_ROLES } from '@/lib/constants';
 import { useApiData } from '@/hooks/useApiData';
 
+const PAGE_SIZE = 50;
+
 export default function AdminDisputes() {
-  const { data: disputes, loading, error, reload } = useApiData(api.getAllDisputes);
+  const [page, setPage] = useState(1);
+  const {
+    data: disputes,
+    meta,
+    loading,
+    error,
+    reload,
+  } = useApiData(
+    () => api.getAllDisputes({ limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE }),
+    [page],
+  );
 
   return (
     <Protected roles={STAFF_ROLES}>
@@ -28,7 +42,7 @@ export default function AdminDisputes() {
           <div className="card-header">
             <h3>Disputes</h3>
             <span className="text-sm text-muted">
-              {loading ? 'Loading…' : `${disputes?.length || 0} records`}
+              {loading ? 'Loading…' : `${meta?.total ?? disputes?.length ?? 0} records`}
             </span>
           </div>
           <DataTable
@@ -63,6 +77,7 @@ export default function AdminDisputes() {
             rows={disputes || []}
             loading={loading}
           />
+          <Pagination meta={meta} onPage={setPage} disabled={loading} />
         </div>
       </Layout>
     </Protected>

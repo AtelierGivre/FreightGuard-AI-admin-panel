@@ -5,13 +5,26 @@ import { ClipboardCheck, Check, X, Eye } from 'lucide-react';
 import Layout from '@/components/Layout';
 import Protected from '@/components/Protected';
 import StatusPill from '@/components/StatusPill';
+import Pagination from '@/components/Pagination';
 import { api } from '@/lib/api';
 import { money, confidencePct } from '@/lib/format';
 import { STAFF_ROLES, REVIEW_CONFIDENCE_THRESHOLD } from '@/lib/constants';
 import { useApiData } from '@/hooks/useApiData';
 
+const PAGE_SIZE = 50;
+
 export default function ReviewQueue() {
-  const { data: items, loading, error, reload } = useApiData(api.getReviewQueue);
+  const [page, setPage] = useState(1);
+  const {
+    data: items,
+    meta,
+    loading,
+    error,
+    reload,
+  } = useApiData(
+    () => api.getReviewQueue({ limit: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE }),
+    [page],
+  );
   const [notes, setNotes] = useState({});
   const [actionError, setActionError] = useState('');
 
@@ -53,7 +66,7 @@ export default function ReviewQueue() {
         <div className="card">
           <div className="card-header">
             <h3>Flagged lines awaiting review</h3>
-            <span className="pill amber">{(items || []).length} items</span>
+            <span className="pill amber">{meta?.total ?? (items || []).length} items</span>
           </div>
 
           {loading && <div className="empty">Loading queue…</div>}
@@ -126,6 +139,7 @@ export default function ReviewQueue() {
               </div>
             </div>
           ))}
+          <Pagination meta={meta} onPage={setPage} disabled={loading} />
         </div>
       </Layout>
     </Protected>

@@ -13,6 +13,12 @@ const billingRules = [
   body('billingStatus').isIn(['due', 'paid']).withMessage('Billing status must be due or paid'),
 ];
 
+router.get(
+  '/dispute/:disputeId',
+  param('disputeId').isMongoId().withMessage('Invalid dispute ID'),
+  validate,
+  asyncHandler(controller.getForDispute),
+);
 router.get('/', asyncHandler(controller.list));
 router.put(
   '/:id/billing',
