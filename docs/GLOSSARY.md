@@ -29,22 +29,24 @@ Shared vocabulary for demurrage/detention domain terms, product concepts and cod
 
 ## Audit and review
 
-| Term                 | Meaning                                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Audit**            | Running the rules engine against an invoice's lines. Started by `POST /api/invoices/:id/audit`.                           |
-| **Rules engine**     | `server/src/utils/rulesEngine.js`. Applies six verdict rules from PRD section F5.                                         |
-| **Verdict**          | Engine decision for a line: `ok`, `overcharged`, `invalid`, or `skipped`.                                                 |
-| **`ok`**             | Charge matches contract terms and free time rules (confidence 0.92).                                                      |
-| **`overcharged`**    | Billed days or rate exceed what the contract allows (confidence 0.88–0.90).                                               |
-| **`invalid`**        | No charge is due (inside free time, duplicate, or corrected amount is zero).                                              |
-| **`skipped`**        | No matching contract was found; the engine cannot judge the line (confidence 0.50).                                       |
-| **Confidence**       | 0–1 score representing how certain the engine is. Low-confidence flags need human review.                                 |
-| **Review threshold** | `REVIEW_CONFIDENCE_THRESHOLD = 0.7`. Flags at or below this value belong in the operator review queue.                    |
-| **Flag**             | A line whose verdict is not `ok` or `skipped`, i.e. a potentially recoverable charge.                                     |
-| **Review status**    | `unreviewed`, `confirmed`, or `rejected` — the customer accept/reject or operator decision on a flag.                     |
-| **Review queue**     | Admin screen listing unreviewed flags, sorted by lowest confidence first.                                                 |
-| **Operator gate**    | The rule that low-confidence flags are reviewed by staff; customer acceptance is stored in the same `reviewStatus` field. |
-| **Accepted flag**    | A flagged line with `reviewStatus: 'confirmed'`; the only kind of line included in a dispute letter.                      |
+| Term                  | Meaning                                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Audit**             | Running the rules engine against an invoice's lines. Started by `POST /api/invoices/:id/audit`.                          |
+| **Rules engine**      | `server/src/utils/rulesEngine.js`. Applies six verdict rules from PRD section F5.                                        |
+| **Verdict**           | Engine decision for a line: `ok`, `overcharged`, `invalid`, or `skipped`.                                                |
+| **`ok`**              | Charge matches contract terms and free time rules (confidence 0.92).                                                     |
+| **`overcharged`**     | Billed days or rate exceed what the contract allows (confidence 0.88–0.90).                                              |
+| **`invalid`**         | No charge is due (inside free time, duplicate, or corrected amount is zero).                                             |
+| **`skipped`**         | No matching contract was found; the engine cannot judge the line (confidence 0.50).                                      |
+| **Confidence**        | 0–1 score representing how certain the engine is. Low-confidence flags need human review.                                |
+| **Review threshold**  | `REVIEW_CONFIDENCE_THRESHOLD = 0.7`. Flags at or below this value belong in the operator review queue.                   |
+| **Flag**              | A line whose verdict is not `ok` or `skipped`, i.e. a potentially recoverable charge.                                    |
+| **Review status**     | `unreviewed`, `confirmed`, or `rejected` — a legacy mirror of the latest customer or operator decision.                  |
+| **Customer decision** | `accept` or `reject`, stored in `customerDecision` by the customer flag review route.                                    |
+| **Operator decision** | `unreviewed`, `confirmed`, or `rejected`, stored in `operatorDecision` by staff review.                                  |
+| **Review queue**      | Admin screen listing unreviewed flags, sorted by lowest confidence first.                                                |
+| **Operator gate**     | The rule that low-confidence flags need both customer acceptance and operator confirmation before a letter is generated. |
+| **Accepted flag**     | A flagged line not rejected by either side; high confidence needs one acceptance, low confidence needs both.             |
 
 ---
 
@@ -65,12 +67,12 @@ Shared vocabulary for demurrage/detention domain terms, product concepts and cod
 
 ## Disputes
 
-| Term               | Meaning                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------ |
-| **Dispute**        | A formal challenge sent to a carrier over flagged charges. Stored in `disputes`, scoped to a company.        |
-| **Dispute status** | Bounded lifecycle: `draft` → `sent` → `under_review` → `won` / `lost`. `won` is set by recording a recovery. |
-| **Dispute letter** | Plain text generated from accepted flags only; browser exports it as TXT/PDF.                                |
-| **Recovery**       | Cash received from a successful dispute; recording it creates the fee record and marks the dispute `won`.    |
+| Term               | Meaning                                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Dispute**        | A formal challenge sent to a carrier over flagged charges. Stored in `disputes`, scoped to a company.                                |
+| **Dispute status** | Bounded lifecycle: `draft` → `sent` → `under_review` → `won` / `lost`. `won` is set by recording a recovery.                         |
+| **Dispute letter** | Plain text generated from accepted flags only; browser exports it as TXT/PDF.                                                        |
+| **Recovery**       | Cash received from a `sent` or `under_review` dispute; it creates the fee record, marks the dispute `won`, and cannot be duplicated. |
 
 ---
 

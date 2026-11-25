@@ -247,7 +247,7 @@ Every result includes `reason` and `confidence` (0–1). Lines at or below `REVI
 `server/src/utils/domain.js` owns the business rules promoted in unit 11–14:
 
 - `isFlagged(line)` excludes `ok` and `skipped` lines from disputes.
-- `isAcceptedFlag(line)` requires `reviewStatus: 'confirmed'` (customer or operator acceptance).
+- `isAcceptedFlag(line)` uses separate `customerDecision` and `operatorDecision` fields: rejections always win, low-confidence flags need both approvals, and legacy `reviewStatus: 'confirmed'` is honoured only when no split decision exists.
 - `DISPUTE_TRANSITIONS` is the only allowed status path: `draft → sent → under_review → won/lost`. `won` is reached by recording a recovery, which also creates the fee record.
 - `calculateFee(amount, feePct)` returns `round2(amount * feePct / 100)`. `feePct = 25` means 25%, not a 25× multiplier.
 
@@ -268,7 +268,7 @@ Every result includes `reason` and `confidence` (0–1). Lines at or below `REVI
 **Customer accepts a flag, then recovers money:**
 
 1. `Invoices` page calls `api.reviewFlag(invoiceId, lineId, { decision: 'accept' })`.
-2. `disputes` page calls `api.generateDisputeLetter({ invoiceId })`; the controller selects confirmed flags, persists the letter to a draft dispute, and returns `letterText` for TXT/PDF export.
+2. `disputes` page calls `api.generateDisputeLetter({ invoiceId })`; the controller selects eligible flags with `isAcceptedFlag`, persists the letter to a draft dispute, and returns `letterText` for TXT/PDF export.
 3. Status changes go through `api.updateDisputeStatus(id, { status })` and are rejected if they skip a state or try to mark `won` without cash.
 4. `api.recordRecovery(id, { amount, recoveredAt })` creates a company-scoped `Recovery`, calculates the fee with `calculateFee()`, and sets the dispute to `won`.
 5. Staff can call `api.updateRecoveryBilling(id, { billingStatus: 'paid' })`; the dashboard fee-due KPI excludes paid fees.
@@ -300,7 +300,7 @@ All models include `createdAt` / `updatedAt`. See [PROJECT_PLAN.md](PROJECT_PLAN
 
 - Passwords hashed with bcrypt; password field never selected by `protect`.
 - JWT secret validated in production; explicit CORS origin; Helmet headers.
-- Input validation on all mutating routes and for resource ids/pagination/review enums.
+- Input validation on all mutating routes and for resource ids/pagination/review enums; shared pagination caps page size at 200 records.
 - Centralised errors never leak stack traces.
 - Frontend requires `NEXT_PUBLIC_API_URL` in real mode; a missing URL shows a configuration error and API failures surface to the UI. The opt-in preview mode is disabled in production.
 - Admin self-lockout guards.
@@ -338,3 +338,5 @@ The promoted units 11–14 now live in `client/app/`, `server/src/controllers/` 
 - Promoted units 11–14: flag accept/reject, dispute letters, status tracking, recovery recording and fee billing.
 - Added `domain.js` and `letterGenerator.js` on the server, `letterExport.js` on the client, and Node tests for fee math, transitions, flag eligibility and letter content.
 - Fixed fee math to `amount * feePct / 100` and excluded paid fees from dashboard `feeDue`.
+- Added shared list pagination, transactional tenant cleanup and duplicate-proof recovery recording.
+- Hardened registration, tenant scoping, role guards and status transitions with controller-level tests.

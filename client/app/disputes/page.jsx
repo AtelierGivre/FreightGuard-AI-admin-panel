@@ -15,7 +15,6 @@ import { useApiData } from '@/hooks/useApiData';
 import { useAuth } from '@/context/AuthContext';
 
 const DISPUTE_PAGE_SIZE = 25;
-const RECOVERY_PAGE_SIZE = 50;
 const INVOICE_PAGE_SIZE = 200;
 const STATUSES = ['draft', 'sent', 'under_review', 'won', 'lost'];
 const NEXT_STATUS = {

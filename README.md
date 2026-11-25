@@ -138,11 +138,12 @@ npm run check         # lint + format:check + test + build in one command
 
 - Full Next.js + Express + MongoDB setup with clean separation, reusable components, JWT auth, RBAC, validation, centralised error handling, Helmet and explicit CORS origin.
 - Contracts CRUD, invoice management, manual invoice entry, and a basic audit rules engine with per-line verdicts, reasons and confidence scores.
-- User accept/reject decisions on flagged audit lines, shared with operator review through `reviewStatus`.
-- Dispute letters generated only from accepted flags, with TXT export and a dependency-free PDF writer.
+- Customer accept/reject decisions on flagged audit lines stored separately from operator review decisions, with `reviewStatus` kept as a legacy mirror.
+- Dispute letters generated only from accepted flags, with TXT export and a dependency-free PDF writer. Low-confidence flags need both customer and operator approval.
 - Bounded dispute workflow: `draft → sent → under_review → won/lost`; recovery recording is the only path into `won`.
 - Recovery records with company-specific fee percentage, `feeAmount = amount × feePct / 100`, `billingStatus` of `due`/`paid`, and company-scoped listing.
-- Dashboard with traceable KPIs and tables; fee-due totals exclude paid fees.
+- Dashboard with traceable KPIs and tables; fee-due totals exclude paid fees and charts use real recovery dates.
+- Paginated list endpoints with shared `limit`/`skip`/`page` parsing and totals that stay correct across pages.
 - Admin panel: platform stats, operator review queue, user management, all-invoice and all-dispute oversight, settings.
 - Shared constants and formatters so business numbers (`25%` fee, `0.7` review threshold, money formatting) live in one place.
 - Automated domain tests, ESLint, Prettier, EditorConfig, CI workflow, PR template and live deployment.

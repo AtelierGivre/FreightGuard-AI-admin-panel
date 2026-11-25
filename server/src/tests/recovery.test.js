@@ -5,6 +5,7 @@ const {
   RECOVERY_ALLOWED_STATUSES,
   isFlagged,
   isAcceptedFlag,
+  syncReviewStatus,
   canTransition,
   assertTransition,
   calculateFee,
@@ -56,6 +57,26 @@ test('low-confidence flags need both customer and operator approval', () => {
   const line = { verdict: 'invalid', confidence: 0.68, customerDecision: 'accept' };
   assert.equal(isAcceptedFlag(line), false);
   assert.equal(isAcceptedFlag({ ...line, operatorDecision: 'confirmed' }), true);
+});
+
+test('a high-confidence operator confirmation is enough on its own', () => {
+  assert.equal(
+    isAcceptedFlag({ verdict: 'overcharged', confidence: 0.92, operatorDecision: 'confirmed' }),
+    true,
+  );
+});
+
+test('customer and operator decisions stay in separate fields', () => {
+  const line = { verdict: 'invalid', confidence: 0.9, customerDecision: 'accept' };
+  syncReviewStatus(line);
+  assert.equal(line.reviewStatus, 'confirmed');
+
+  line.operatorDecision = 'rejected';
+  syncReviewStatus(line);
+  assert.equal(line.customerDecision, 'accept');
+  assert.equal(line.operatorDecision, 'rejected');
+  assert.equal(line.reviewStatus, 'rejected');
+  assert.equal(isAcceptedFlag(line), false);
 });
 
 test('letter includes only accepted flags and totals the claim', () => {

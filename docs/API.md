@@ -20,7 +20,7 @@ Success:
 }
 ```
 
-Some endpoints return `token` and `user` at the top level (`/auth/register`, `/auth/login`) or `message` instead of `data` (deletes, health).
+Some endpoints return `token` and `user` at the top level (`/auth/register`, `/auth/login`) or `message` instead of `data` (deletes, health). List endpoints keep `count`/`data` for existing clients and also return `total` plus a `meta` block.
 
 Failure:
 
@@ -41,6 +41,10 @@ Validation failure (HTTP 400):
 }
 ```
 
+### Pagination
+
+List endpoints accept `limit` (1–200, default 50) and `skip`; `page` is also accepted for older clients. The response `meta` contains `total`, `page`, `limit`, `skip` and `pages`. Recovery and admin invoice lists add a `summary` inside `meta` so KPI totals stay correct while the table is paged.
+
 ### Authentication
 
 All routes except `/api/health`, `/api/auth/register` and `/api/auth/login` require:
@@ -53,25 +57,26 @@ The token is returned by `POST /auth/login` or `POST /auth/register`. The fronte
 
 ### Role matrix
 
-| Role       | Allowed                                                                                  |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| `user`     | Auth, contracts, invoices, flag decisions, company-scoped disputes/recoveries, dashboard |
-| `operator` | Everything a `user` can do + all admin **read** routes and review queue                  |
-| `admin`    | Everything, including fee billing, user management and settings                          |
+| Role       | Allowed                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| `user`     | Auth, contracts, invoices, customer flag decisions, company-scoped disputes/recoveries, dashboard |
+| `operator` | Everything a `user` can do + admin read routes, operator flag review and fee billing              |
+| `admin`    | Everything, including user management and settings                                                |
 
-Admin user-management routes add an extra `authorize('admin')` guard. `PUT /api/recoveries/:id/billing` allows `operator` and `admin` only. An admin cannot demote, deactivate or delete their own account.
+Admin user-management routes add an extra `authorize('admin')` guard. `PUT /api/recoveries/:id/billing` allows `operator` and `admin` only; staff can bill any tenant's recovery. An admin cannot demote, deactivate or delete their own account.
 
 ### Enum values
 
-| Field            | Values                                          |
-| ---------------- | ----------------------------------------------- |
-| `role`           | `user`, `operator`, `admin`                     |
-| `verdict`        | `ok`, `overcharged`, `invalid`, `skipped`       |
-| `reviewStatus`   | `unreviewed`, `confirmed`, `rejected`           |
-| `decision`       | `accept`, `reject` (maps to confirmed/rejected) |
-| `auditStatus`    | `pending`, `processing`, `audited`, `failed`    |
-| `dispute.status` | `draft`, `sent`, `under_review`, `won`, `lost`  |
-| `billingStatus`  | `due`, `paid`                                   |
+| Field              | Values                                                |
+| ------------------ | ----------------------------------------------------- |
+| `role`             | `user`, `operator`, `admin`                           |
+| `verdict`          | `ok`, `overcharged`, `invalid`, `skipped`             |
+| `customerDecision` | `accept`, `reject`                                    |
+| `operatorDecision` | `unreviewed`, `confirmed`, `rejected`                 |
+| `reviewStatus`     | `unreviewed`, `confirmed`, `rejected` (legacy mirror) |
+| `auditStatus`      | `pending`, `processing`, `audited`, `failed`          |
+| `dispute.status`   | `draft`, `sent`, `under_review`, `won`, `lost`        |
+| `billingStatus`    | `due`, `paid`                                         |
 
 ### Status codes
 
@@ -200,7 +205,7 @@ All invoice routes are company-scoped.
 
 ### `GET /api/invoices`
 
-Returns `{ success, count, data: Invoice[] }` with `contract` populated to `{ carrierName, port }`, newest first.
+Returns `{ success, count, total, meta, data: Invoice[] }` with `contract` populated to `{ carrierName, port }`, newest first.
 
 ### `GET /api/invoices/:id`
 
@@ -270,7 +275,7 @@ Customer accept/reject on one flagged line. The invoice must belong to the calle
 | `decision`   | string | yes      | `accept` or `reject`       |
 | `reviewNote` | string | no       | trimmed, saved on the line |
 
-`accept` stores `reviewStatus: 'confirmed'`; `reject` stores `reviewStatus: 'rejected'`. Both set `reviewedBy` and `reviewedAt`. `200` returns the saved line; `404` if the invoice or line is not in scope.
+`accept` stores `customerDecision: 'accept'`; `reject` stores `customerDecision: 'reject'`. Both set `customerReviewedBy`/`customerReviewedAt` and mirror the result into the legacy `reviewStatus`. The operator decision is kept separately in `operatorDecision`. `200` returns the saved line; `404` if the invoice or line is not in scope.
 
 ---
 
@@ -280,7 +285,7 @@ All dispute routes are company-scoped. Lists and details populate `invoice` (`in
 
 ### `GET /api/disputes`
 
-`200` `{ success, count, data: Dispute[] }`, newest first.
+`200` `{ success, count, total, meta, data: Dispute[] }`, newest first.
 
 ### `GET /api/disputes/:id`
 
@@ -307,7 +312,7 @@ Builds a letter from accepted flags and saves it to the latest draft for that in
 | `invoiceId` | ObjectId   | yes      | valid Mongo id, must be in the caller's company |
 | `lineIds`   | ObjectId[] | no       | restrict the letter to these accepted flags     |
 
-Only lines with `verdict` of `overcharged`/`invalid` **and** `reviewStatus: 'confirmed'` are eligible. `ok`, `skipped` and rejected lines are excluded. If `lineIds` is supplied, every id must resolve to an eligible line on that invoice.
+Eligible lines use the shared `isAcceptedFlag` rule: the verdict must be `overcharged` or `invalid`; a customer rejection or operator rejection always excludes the line; high-confidence flags need either acceptance, while flags at or below `0.7` confidence need both customer acceptance and operator confirmation. Legacy `reviewStatus: 'confirmed'` still works when no split decision exists. `ok`, `skipped` and rejected lines are excluded. If `lineIds` is supplied, every id must resolve to an eligible line on that invoice.
 
 ```json
 {
@@ -364,7 +369,7 @@ Records recovered cash, creates the fee line item and marks the dispute `won` in
 }
 ```
 
-The fee percentage comes from `company.feePct` or `DEFAULT_FEE_PCT` (25). The calculation is `amount × feePct / 100`, rounded to two decimals. `400` if a recovery already exists for the dispute or if the dispute is already lost.
+The fee percentage comes from `company.feePct` or `DEFAULT_FEE_PCT` (25). The calculation is `amount × feePct / 100`, rounded to two decimals. Recovery is only accepted from `sent` or `under_review`; `409` means the dispute already won or cannot be claimed, and `400` means a recovery record already exists or the dispute is lost.
 
 ---
 
@@ -372,11 +377,28 @@ The fee percentage comes from `company.feePct` or `DEFAULT_FEE_PCT` (25). The ca
 
 ### `GET /api/recoveries`
 
-Company-scoped, newest first. Each record populates `dispute.status`, `dispute.disputedAmount` and `dispute.invoice` (`invoiceNumber`, `carrierName`).
+Company-scoped, newest first, paginated. Each record populates `dispute.status`, `dispute.disputedAmount` and `dispute.invoice` (`invoiceNumber`, `carrierName`). `meta.summary` carries company-wide `amount`, `fees` and `due` totals.
 
 ```json
-{ "success": true, "count": 1, "data": [] }
+{
+  "success": true,
+  "count": 1,
+  "total": 1,
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 50,
+    "skip": 0,
+    "pages": 1,
+    "summary": { "amount": 2845, "fees": 711.25, "due": 0 }
+  },
+  "data": []
+}
 ```
+
+### `GET /api/recoveries/dispute/:disputeId`
+
+Returns `{ success, data: Recovery | null }` for one company-owned dispute; used by the dispute detail panel. `404` is not used for a missing recovery.
 
 ### `PUT /api/recoveries/:id/billing` — staff only
 
@@ -384,7 +406,7 @@ Company-scoped, newest first. Each record populates `dispute.status`, `dispute.d
 | --------------- | ------ | -------- | --------------- |
 | `billingStatus` | string | yes      | `due` or `paid` |
 
-Marking a fee `paid` stamps `billedAt`; marking it `due` clears that stamp. `200` with the updated recovery, `403` for `user`, `404` when the recovery is outside the caller's company. Dashboard `feeDue` sums only recoveries whose `billingStatus` is not `paid`.
+Marking a fee `paid` stamps `billedAt`; marking it `due` clears that stamp. `200` with the updated recovery, `403` for `user`, and `404` when a customer requests a recovery outside their company. Staff may bill any tenant. Dashboard `feeDue` sums only recoveries whose `billingStatus` is not `paid`.
 
 ---
 
@@ -406,6 +428,9 @@ Auth required, company-scoped.
       "recoveredAmount": 2845,
       "recoveryRate": 57.88,
       "feeDue": 711.25,
+      "feeRecorded": 711.25,
+      "feePct": 25,
+      "disputedAmount": 1500,
       "activeDisputes": 4
     },
     "invoices": [
@@ -423,7 +448,7 @@ Auth required, company-scoped.
 }
 ```
 
-`totalBilled` is rounded to two decimals and intentionally matches the sum shown in the invoice table (this was a cleanup bug fix). The sample values above reflect the seeded demo workspace.
+`totalBilled` is rounded to two decimals and intentionally matches the sum shown in the invoice table. `disputedAmount` and `feeRecorded` are company-wide totals, so dispute KPIs stay correct while the disputes page is paginated. `weekly[]` holds eight ISO-week buckets built from real recovery dates; the sample values above reflect the seeded demo workspace.
 
 ---
 
@@ -457,7 +482,8 @@ Paginated flagged lines, lowest confidence first.
 | ----------- | -------- | ------------ | -------------------------- |
 | `status`    | string   | `unreviewed` | one of `reviewStatus` enum |
 | `page`      | integer  | `1`          | ≥ 1                        |
-| `limit`     | integer  | `50`         | 1–100                      |
+| `skip`      | integer  | derived      | ≥ 0                        |
+| `limit`     | integer  | `50`         | 1–200                      |
 | `invoiceId` | ObjectId | —            | valid Mongo id             |
 
 ```json
@@ -467,6 +493,7 @@ Paginated flagged lines, lowest confidence first.
   "total": 3,
   "page": 1,
   "pages": 1,
+  "meta": { "total": 3, "page": 1, "limit": 50, "skip": 0, "pages": 1 },
   "data": [
     {
       "_id": "...",
@@ -496,11 +523,11 @@ Paginated flagged lines, lowest confidence first.
 | `correctAmount` | number | no       | float ≥ 0                             |
 | `verdict`       | string | no       | valid verdict enum                    |
 
-Sets `reviewStatus`, `reviewedBy = req.user._id` and `reviewedAt = now`, then applies any optional fields. `200` with the saved line; `404` if the line does not exist.
+Sets `operatorDecision`, `reviewedBy = req.user._id` and `reviewedAt = now`, mirrors the result into `reviewStatus`, then applies any optional fields. Customer accept/reject is set separately through the invoice decision route. `200` with the saved line; `404` if the line does not exist.
 
 ### `GET /api/admin/users`
 
-`200` `{ success, count, data: User[] }` with `company` populated to `{ name, plan }`, newest first.
+`200` `{ success, count, total, meta, data: User[] }` with `company` populated to `{ name, plan }`, newest first.
 
 ### `PUT /api/admin/users/:id` — admin only
 
@@ -518,11 +545,11 @@ Deletes an orphan/test tenant and all of its workspace data: users, contracts, i
 
 ### `GET /api/admin/invoices`
 
-All invoices across companies, with `company` and `contract` populated. `{ success, count, data }`.
+All invoices across companies, with `company` and `contract` populated. `{ success, count, total, meta, data }`; `meta.summary` holds platform-wide `totalBilled` and `audited` counts.
 
 ### `GET /api/admin/disputes`
 
-All disputes across companies, with `company` and `invoice` populated. `{ success, count, data }`.
+All disputes across companies, with `company` and `invoice` populated. `{ success, count, total, meta, data }`.
 
 ### `GET /api/admin/settings`
 
@@ -537,7 +564,7 @@ All disputes across companies, with `company` and `invoice` populated. `{ succes
 }
 ```
 
-The fee comes from `DEFAULT_FEE_PCT` (default 25), shared with the seed script and client constants.
+The fee comes from `DEFAULT_FEE_PCT` (default 25), shared with the seed script and client constants. This list also returns pagination `meta` for the company table.
 
 ---
 

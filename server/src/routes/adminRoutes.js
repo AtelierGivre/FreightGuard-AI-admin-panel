@@ -15,7 +15,8 @@ const idRule = [param('id').isMongoId().withMessage('Invalid resource ID')];
 const queueRules = [
   query('status').optional().isIn(ENUMS.REVIEW_STATUS),
   query('page').optional().isInt({ min: 1 }).toInt(),
-  query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  query('skip').optional().isInt({ min: 0 }).toInt(),
+  query('limit').optional().isInt({ min: 1, max: 200 }).toInt(),
   query('invoiceId').optional().isMongoId(),
 ];
 

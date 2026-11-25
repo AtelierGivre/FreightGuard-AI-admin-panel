@@ -87,7 +87,7 @@ Real Kimi OCR, charts/CSV, email notifications, payment collection, Google OAuth
 
 `users` · `companies` · `contracts` · `invoices` · `invoice_lines` · `disputes` · `recoveries` · `audit_jobs`
 
-Every user-owned table is scoped by `company`, and every model has `createdAt` / `updatedAt`. The 65% build added `currency` and `lines` to disputes, `billingStatus` / `billedAt` to recoveries, and refined `reviewStatus` to carry customer accept/reject decisions as well as operator review.
+Every user-owned table is scoped by `company`, and every model has `createdAt` / `updatedAt`. The 65% build added `currency` and `lines` to disputes, `billingStatus` / `billedAt` to recoveries, and separate `customerDecision` / `operatorDecision` fields with `reviewStatus` kept as a legacy mirror.
 
 ---
 
@@ -106,7 +106,8 @@ PUT  /api/invoices/:id/lines/:lineId/decision
 GET  /api/disputes           POST /api/disputes         GET /api/disputes/:id
 POST /api/disputes/letters   PUT /api/disputes/:id/status
 POST /api/disputes/:id/recovery
-GET  /api/recoveries         PUT /api/recoveries/:id/billing   (staff only)
+GET  /api/recoveries         GET /api/recoveries/dispute/:disputeId
+PUT  /api/recoveries/:id/billing   (staff only)
 
 GET  /api/dashboard
 
